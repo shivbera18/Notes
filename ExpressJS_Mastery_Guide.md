@@ -2125,3 +2125,1451 @@ app.post('/logout', (req, res) => {
 });
 ```
 
+
+---
+
+## 12. Custom Middleware Patterns
+
+### Middleware Factory Pattern
+
+Create reusable middleware generators:
+
+```javascript
+// Middleware factory for logging
+const createLogger = (options = {}) => {
+  const { prefix = 'LOG', includeBody = false } = options;
+  
+  return (req, res, next) => {
+    console.log(`[${prefix}] ${req.method} ${req.url}`);
+    
+    if (includeBody && req.body) {
+      console.log(`[${prefix}] Body:`, req.body);
+    }
+    
+    next();
+  };
+};
+
+// Usage
+app.use(createLogger({ prefix: 'API', includeBody: true }));
+```
+
+### Async Error Handler Pattern
+
+```javascript
+// Wrapper for async route handlers
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
+// Usage
+app.get('/users/:id', asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
+  if (!user) throw new Error('User not found');
+  res.json(user);
+}));
+```
+
+### Request ID Middleware
+
+```javascript
+const { v4: uuidv4 } = require('uuid');
+
+const requestId = (req, res, next) => {
+  req.id = uuidv4();
+  res.set('X-Request-ID', req.id);
+  next();
+};
+
+app.use(requestId);
+```
+
+### Response Time Middleware
+
+```javascript
+const responseTime = (req, res, next) => {
+  const start = process.hrtime();
+  
+  res.on('finish', () => {
+    const [seconds, nanoseconds] = process.hrtime(start);
+    const duration = seconds * 1000 + nanoseconds / 1000000;
+    res.set('X-Response-Time', `${duration.toFixed(2)}ms`);
+  });
+  
+  next();
+};
+
+app.use(responseTime);
+```
+
+### Request Timeout Middleware
+
+```javascript
+const timeout = (ms) => {
+  return (req, res, next) => {
+    const timer = setTimeout(() => {
+      res.status(408).json({ error: 'Request timeout' });
+    }, ms);
+    
+    res.on('finish', () => clearTimeout(timer));
+    next();
+  };
+};
+
+app.use(timeout(30000)); // 30 second timeout
+```
+
+### API Key Authentication Middleware
+
+```javascript
+const apiKeyAuth = (req, res, next) => {
+  const apiKey = req.get('X-API-Key');
+  
+  if (!apiKey) {
+    return res.status(401).json({ error: 'API key required' });
+  }
+  
+  // Validate API key (check database, cache, etc.)
+  if (apiKey !== process.env.API_KEY) {
+    return res.status(403).json({ error: 'Invalid API key' });
+  }
+  
+  next();
+};
+
+app.use('/api', apiKeyAuth);
+```
+
+### Request Sanitization Middleware
+
+```javascript
+const sanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+
+// Prevent NoSQL injection
+app.use(sanitize());
+
+// Prevent XSS attacks
+app.use(xss());
+
+// Custom sanitization
+const customSanitize = (req, res, next) => {
+  if (req.body) {
+    Object.keys(req.body).forEach(key => {
+      if (typeof req.body[key] === 'string') {
+        req.body[key] = req.body[key].trim();
+      }
+    });
+  }
+  next();
+};
+
+app.use(customSanitize);
+```
+
+---
+
+## 13. Error Handling Middleware
+
+### Basic Error Handler
+
+```javascript
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  
+  res.status(err.status || 500).json({
+    error: {
+      message: err.message,
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    }
+  });
+});
+```
+
+### Advanced Error Handler
+
+```javascript
+class AppError extends Error {
+  constructor(message, statusCode) {
+    super(message);
+    this.statusCode = statusCode;
+    this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
+    this.isOperational = true;
+    
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+// Error handler middleware
+const errorHandler = (err, req, res, next) => {
+  err.statusCode = err.statusCode || 500;
+  err.status = err.status || 'error';
+  
+  if (process.env.NODE_ENV === 'development') {
+    res.status(err.statusCode).json({
+      status: err.status,
+      error: err,
+      message: err.message,
+      stack: err.stack
+    });
+  } else {
+    // Production error response
+    if (err.isOperational) {
+      res.status(err.statusCode).json({
+        status: err.status,
+        message: err.message
+      });
+    } else {
+      // Programming or unknown error
+      console.error('ERROR 💥', err);
+      res.status(500).json({
+        status: 'error',
+        message: 'Something went wrong'
+      });
+    }
+  }
+};
+
+app.use(errorHandler);
+
+// Usage
+app.get('/users/:id', async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+    res.json(user);
+  } catch (err) {
+    next(err);
+  }
+});
+```
+
+### Specific Error Handlers
+
+```javascript
+// Handle different error types
+const errorHandler = (err, req, res, next) => {
+  let error = { ...err };
+  error.message = err.message;
+  
+  // Mongoose bad ObjectId
+  if (err.name === 'CastError') {
+    const message = 'Resource not found';
+    error = new AppError(message, 404);
+  }
+  
+  // Mongoose duplicate key
+  if (err.code === 11000) {
+    const message = 'Duplicate field value entered';
+    error = new AppError(message, 400);
+  }
+  
+  // Mongoose validation error
+  if (err.name === 'ValidationError') {
+    const message = Object.values(err.errors).map(e => e.message).join(', ');
+    error = new AppError(message, 400);
+  }
+  
+  // JWT errors
+  if (err.name === 'JsonWebTokenError') {
+    const message = 'Invalid token';
+    error = new AppError(message, 401);
+  }
+  
+  if (err.name === 'TokenExpiredError') {
+    const message = 'Token expired';
+    error = new AppError(message, 401);
+  }
+  
+  res.status(error.statusCode || 500).json({
+    status: error.status || 'error',
+    message: error.message || 'Server Error'
+  });
+};
+```
+
+### 404 Handler
+
+```javascript
+// Must be after all other routes
+app.use((req, res, next) => {
+  res.status(404).json({
+    status: 'fail',
+    message: `Cannot find ${req.originalUrl} on this server`
+  });
+});
+```
+
+### Unhandled Rejection Handler
+
+```javascript
+// In server.js
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.log('UNHANDLED REJECTION! 💥 Shutting down...');
+  console.log(err.name, err.message);
+  server.close(() => {
+    process.exit(1);
+  });
+});
+
+process.on('uncaughtException', (err) => {
+  console.log('UNCAUGHT EXCEPTION! 💥 Shutting down...');
+  console.log(err.name, err.message);
+  process.exit(1);
+});
+```
+
+---
+
+## Part IV: Database Integration
+
+---
+
+## 14. MongoDB & Mongoose
+
+### Setup and Connection
+
+```bash
+npm install mongoose
+```
+
+```javascript
+const mongoose = require('mongoose');
+
+// Basic connection
+mongoose.connect('mongodb://localhost:27017/myapp')
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// With options
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+})
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// Connection events
+mongoose.connection.on('connected', () => {
+  console.log('Mongoose connected to DB');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.log('Mongoose connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('Mongoose disconnected');
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  await mongoose.connection.close();
+  process.exit(0);
+});
+```
+
+### Defining Schemas and Models
+
+```javascript
+const mongoose = require('mongoose');
+const { Schema } = mongoose;
+
+// User Schema
+const userSchema = new Schema({
+  name: {
+    type: String,
+    required: [true, 'Name is required'],
+    trim: true,
+    minlength: [2, 'Name must be at least 2 characters'],
+    maxlength: [50, 'Name cannot exceed 50 characters']
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+    match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email']
+  },
+  password: {
+    type: String,
+    required: true,
+    minlength: 8,
+    select: false // Don't include in queries by default
+  },
+  age: {
+    type: Number,
+    min: [0, 'Age cannot be negative'],
+    max: [150, 'Age seems unrealistic']
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'moderator'],
+    default: 'user'
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  avatar: String,
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: Date
+}, {
+  timestamps: true // Automatically manage createdAt and updatedAt
+});
+
+// Create model
+const User = mongoose.model('User', userSchema);
+
+module.exports = User;
+```
+
+### Schema Methods and Statics
+
+```javascript
+// Instance methods
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+userSchema.methods.generateAuthToken = function() {
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET);
+};
+
+// Static methods
+userSchema.statics.findByEmail = function(email) {
+  return this.findOne({ email });
+};
+
+userSchema.statics.findActive = function() {
+  return this.find({ isActive: true });
+};
+
+// Virtual properties
+userSchema.virtual('fullName').get(function() {
+  return `${this.firstName} ${this.lastName}`;
+});
+
+// Middleware (hooks)
+userSchema.pre('save', async function(next) {
+  // Only hash password if it's modified
+  if (!this.isModified('password')) return next();
+  
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
+
+userSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+userSchema.post('save', function(doc, next) {
+  console.log('User saved:', doc._id);
+  next();
+});
+
+// Query middleware
+userSchema.pre(/^find/, function(next) {
+  this.find({ isActive: { $ne: false } });
+  next();
+});
+```
+
+### CRUD Operations
+
+```javascript
+const User = require('./models/User');
+
+// CREATE
+app.post('/api/users', async (req, res) => {
+  try {
+    const user = new User(req.body);
+    await user.save();
+    
+    // Or use create
+    // const user = await User.create(req.body);
+    
+    res.status(201).json(user);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// READ - Get all
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await User.find();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// READ - Get one
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// UPDATE
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { 
+        new: true,           // Return updated document
+        runValidators: true  // Run schema validators
+      }
+    );
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(user);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// DELETE
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+```
+
+### Advanced Queries
+
+```javascript
+// Filtering
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await User.find({ role: 'admin', isActive: true });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Query operators
+const users = await User.find({
+  age: { $gte: 18, $lte: 65 },        // Greater than or equal, Less than or equal
+  role: { $in: ['admin', 'moderator'] }, // In array
+  name: { $regex: /john/i }            // Regex match
+});
+
+// Sorting
+const users = await User.find().sort({ createdAt: -1 }); // -1 for descending
+const users = await User.find().sort('name -age'); // name ascending, age descending
+
+// Limiting and pagination
+const page = parseInt(req.query.page) || 1;
+const limit = parseInt(req.query.limit) || 10;
+const skip = (page - 1) * limit;
+
+const users = await User.find()
+  .limit(limit)
+  .skip(skip)
+  .sort({ createdAt: -1 });
+
+const total = await User.countDocuments();
+
+res.json({
+  users,
+  pagination: {
+    page,
+    limit,
+    total,
+    pages: Math.ceil(total / limit)
+  }
+});
+
+// Selecting fields
+const users = await User.find().select('name email'); // Only these fields
+const users = await User.find().select('-password'); // Exclude password
+
+// Population (relationships)
+const postSchema = new Schema({
+  title: String,
+  author: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  }
+});
+
+const posts = await Post.find().populate('author');
+const posts = await Post.find().populate('author', 'name email'); // Select specific fields
+const posts = await Post.find().populate({
+  path: 'author',
+  select: 'name email',
+  match: { isActive: true }
+});
+```
+
+### Aggregation Pipeline
+
+```javascript
+// Group and count
+const stats = await User.aggregate([
+  { $match: { isActive: true } },
+  { $group: {
+    _id: '$role',
+    count: { $sum: 1 },
+    avgAge: { $avg: '$age' }
+  }},
+  { $sort: { count: -1 } }
+]);
+
+// Complex aggregation
+const result = await Order.aggregate([
+  // Stage 1: Match orders from last 30 days
+  { $match: {
+    createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+  }},
+  
+  // Stage 2: Lookup user information
+  { $lookup: {
+    from: 'users',
+    localField: 'userId',
+    foreignField: '_id',
+    as: 'user'
+  }},
+  
+  // Stage 3: Unwind user array
+  { $unwind: '$user' },
+  
+  // Stage 4: Group by user
+  { $group: {
+    _id: '$userId',
+    userName: { $first: '$user.name' },
+    totalOrders: { $sum: 1 },
+    totalAmount: { $sum: '$amount' },
+    avgAmount: { $avg: '$amount' }
+  }},
+  
+  // Stage 5: Sort by total amount
+  { $sort: { totalAmount: -1 } },
+  
+  // Stage 6: Limit results
+  { $limit: 10 }
+]);
+```
+
+### Transactions
+
+```javascript
+const session = await mongoose.startSession();
+session.startTransaction();
+
+try {
+  // Create user
+  const user = await User.create([{
+    name: 'John',
+    email: 'john@example.com'
+  }], { session });
+  
+  // Create related profile
+  await Profile.create([{
+    userId: user[0]._id,
+    bio: 'Hello world'
+  }], { session });
+  
+  await session.commitTransaction();
+  res.json({ success: true });
+} catch (error) {
+  await session.abortTransaction();
+  res.status(500).json({ error: error.message });
+} finally {
+  session.endSession();
+}
+```
+
+
+---
+
+## 15. SQL Databases (PostgreSQL, MySQL)
+
+### PostgreSQL with pg Library
+
+```bash
+npm install pg
+```
+
+```javascript
+const { Pool } = require('pg');
+
+// Create connection pool
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  max: 20,                    // Maximum pool size
+  idleTimeoutMillis: 30000,   // Close idle clients after 30 seconds
+  connectionTimeoutMillis: 2000,
+});
+
+// Test connection
+pool.query('SELECT NOW()', (err, res) => {
+  if (err) {
+    console.error('Database connection error:', err);
+  } else {
+    console.log('Database connected:', res.rows[0]);
+  }
+});
+
+// CRUD Operations
+app.get('/api/users', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM users ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/users', async (req, res) => {
+  try {
+    const { name, email, age } = req.body;
+    const result = await pool.query(
+      'INSERT INTO users (name, email, age) VALUES ($1, $2, $3) RETURNING *',
+      [name, email, age]
+    );
+    
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, age } = req.body;
+    
+    const result = await pool.query(
+      'UPDATE users SET name = $1, email = $2, age = $3, updated_at = NOW() WHERE id = $4 RETURNING *',
+      [name, email, age, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING *', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Transactions
+app.post('/api/transfer', async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    const { fromAccount, toAccount, amount } = req.body;
+    
+    // Deduct from sender
+    await client.query(
+      'UPDATE accounts SET balance = balance - $1 WHERE id = $2',
+      [amount, fromAccount]
+    );
+    
+    // Add to receiver
+    await client.query(
+      'UPDATE accounts SET balance = balance + $1 WHERE id = $2',
+      [amount, toAccount]
+    );
+    
+    await client.query('COMMIT');
+    res.json({ message: 'Transfer successful' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
+  }
+});
+```
+
+---
+
+## 16. ORMs & Query Builders
+
+### Sequelize (SQL ORM)
+
+```bash
+npm install sequelize pg pg-hstore
+```
+
+```javascript
+const { Sequelize, DataTypes } = require('sequelize');
+
+// Initialize Sequelize
+const sequelize = new Sequelize(
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASSWORD,
+  {
+    host: process.env.DB_HOST,
+    dialect: 'postgres',
+    logging: false,
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
+  }
+);
+
+// Test connection
+sequelize.authenticate()
+  .then(() => console.log('Database connected'))
+  .catch(err => console.error('Unable to connect:', err));
+
+// Define Model
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      len: [2, 50]
+    }
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+    validate: {
+      isEmail: true
+    }
+  },
+  password: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  role: {
+    type: DataTypes.ENUM('user', 'admin', 'moderator'),
+    defaultValue: 'user'
+  },
+  isActive: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  }
+}, {
+  timestamps: true,
+  hooks: {
+    beforeCreate: async (user) => {
+      user.password = await bcrypt.hash(user.password, 12);
+    }
+  }
+});
+
+// Associations
+const Post = sequelize.define('Post', {
+  title: DataTypes.STRING,
+  content: DataTypes.TEXT
+});
+
+User.hasMany(Post, { foreignKey: 'userId', as: 'posts' });
+Post.belongsTo(User, { foreignKey: 'userId', as: 'author' });
+
+// Sync models
+sequelize.sync({ alter: true });
+
+// CRUD with Sequelize
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await User.findAll({
+      attributes: ['id', 'name', 'email', 'role'],
+      where: { isActive: true },
+      order: [['createdAt', 'DESC']],
+      limit: 10
+    });
+    
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id, {
+      include: [{
+        model: Post,
+        as: 'posts'
+      }]
+    });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/users', async (req, res) => {
+  try {
+    const user = await User.create(req.body);
+    res.status(201).json(user);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const [updated] = await User.update(req.body, {
+      where: { id: req.params.id }
+    });
+    
+    if (!updated) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const user = await User.findByPk(req.params.id);
+    res.json(user);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const deleted = await User.destroy({
+      where: { id: req.params.id }
+    });
+    
+    if (!deleted) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+```
+
+### Prisma (Modern ORM)
+
+```bash
+npm install prisma @prisma/client
+npx prisma init
+```
+
+**prisma/schema.prisma:**
+
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  isActive  Boolean  @default(true)
+  posts     Post[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  published Boolean  @default(false)
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}
+```
+
+```javascript
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+// CRUD with Prisma
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true
+      },
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' },
+      take: 10
+    });
+    
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      include: { posts: true }
+    });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/users', async (req, res) => {
+  try {
+    const user = await prisma.user.create({
+      data: req.body
+    });
+    
+    res.status(201).json(user);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data: req.body
+    });
+    
+    res.json(user);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    await prisma.user.delete({
+      where: { id: req.params.id }
+    });
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Graceful shutdown
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
+});
+```
+
+---
+
+## Part V: Authentication & Security
+
+---
+
+## 17. Authentication Strategies
+
+### Password Hashing with bcrypt
+
+```bash
+npm install bcryptjs
+```
+
+```javascript
+const bcrypt = require('bcryptjs');
+
+// Hash password
+const hashPassword = async (password) => {
+  const salt = await bcrypt.genSalt(12);
+  return await bcrypt.hash(password, salt);
+};
+
+// Compare password
+const comparePassword = async (candidatePassword, hashedPassword) => {
+  return await bcrypt.compare(candidatePassword, hashedPassword);
+};
+
+// Registration
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    
+    // Check if user exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({ error: 'Email already registered' });
+    }
+    
+    // Hash password
+    const hashedPassword = await hashPassword(password);
+    
+    // Create user
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword
+    });
+    
+    // Remove password from response
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    
+    res.status(201).json(userResponse);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // Find user (include password field)
+    const user = await User.findOne({ email }).select('+password');
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Check password
+    const isMatch = await comparePassword(password, user.password);
+    
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Generate token (covered in next section)
+    const token = generateToken(user._id);
+    
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+```
+
+---
+
+## 18. JWT & Session Management
+
+### JWT (JSON Web Tokens)
+
+```bash
+npm install jsonwebtoken
+```
+
+```javascript
+const jwt = require('jsonwebtoken');
+
+// Generate JWT
+const generateToken = (userId) => {
+  return jwt.sign(
+    { id: userId },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRE || '7d' }
+  );
+};
+
+// Verify JWT
+const verifyToken = (token) => {
+  return jwt.verify(token, process.env.JWT_SECRET);
+};
+
+// Authentication middleware
+const authenticate = async (req, res, next) => {
+  try {
+    // Get token from header
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    
+    // Verify token
+    const decoded = verifyToken(token);
+    
+    // Get user from database
+    const user = await User.findById(decoded.id).select('-password');
+    
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    
+    // Attach user to request
+    req.user = user;
+    next();
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired' });
+    }
+    res.status(500).json({ error: 'Authentication failed' });
+  }
+};
+
+// Authorization middleware
+const authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    
+    next();
+  };
+};
+
+// Protected routes
+app.get('/api/profile', authenticate, (req, res) => {
+  res.json({ user: req.user });
+});
+
+app.delete('/api/users/:id', authenticate, authorize('admin'), async (req, res) => {
+  // Only admins can delete users
+  // Implementation here
+});
+
+// Refresh token pattern
+const generateRefreshToken = (userId) => {
+  return jwt.sign(
+    { id: userId },
+    process.env.REFRESH_TOKEN_SECRET,
+    { expiresIn: '30d' }
+  );
+};
+
+app.post('/api/auth/login', async (req, res) => {
+  // ... login logic
+  
+  const accessToken = generateToken(user._id);
+  const refreshToken = generateRefreshToken(user._id);
+  
+  // Store refresh token in database
+  user.refreshToken = refreshToken;
+  await user.save();
+  
+  res.json({
+    accessToken,
+    refreshToken,
+    user: { id: user._id, name: user.name, email: user.email }
+  });
+});
+
+app.post('/api/auth/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+      return res.status(401).json({ error: 'Refresh token required' });
+    }
+    
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    const user = await User.findById(decoded.id);
+    
+    if (!user || user.refreshToken !== refreshToken) {
+      return res.status(401).json({ error: 'Invalid refresh token' });
+    }
+    
+    const newAccessToken = generateToken(user._id);
+    
+    res.json({ accessToken: newAccessToken });
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid refresh token' });
+  }
+});
+```
+
+### Session-based Authentication
+
+```bash
+npm install express-session connect-mongo
+```
+
+```javascript
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    ttl: 24 * 60 * 60 // 1 day
+  }),
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24 // 1 day
+  }
+}));
+
+// Login with sessions
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    const user = await User.findOne({ email }).select('+password');
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Create session
+    req.session.userId = user._id;
+    req.session.role = user.role;
+    
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Session authentication middleware
+const sessionAuth = (req, res, next) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  next();
+};
+
+// Protected route
+app.get('/api/profile', sessionAuth, async (req, res) => {
+  const user = await User.findById(req.session.userId);
+  res.json({ user });
+});
+
+// Logout
+app.post('/api/auth/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Could not log out' });
+    }
+    res.clearCookie('connect.sid');
+    res.json({ message: 'Logged out successfully' });
+  });
+});
+```
+
