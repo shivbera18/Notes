@@ -2,162 +2,313 @@
 
 This guide covers Object-Oriented Programming (OOP) in depth, SOLID principles, Design Patterns, and common Machine Coding/System Design questions, tailored for Software Development roles.
 
+## Table of Contents
+1.  [Part 1: Object-Oriented Programming (OOP) Deep Dive](#part-1-object-oriented-programming-oop-deep-dive)
+    *   [The 4 Pillars of OOP](#1-the-4-pillars-of-oop)
+    *   [C++ OOP Internals & Essentials](#2-c-oop-internals--essentials)
+2.  [Part 2: SOLID Principles](#part-2-solid-principles)
+3.  [Part 3: Design Patterns](#part-3-design-patterns-gang-of-four)
+    *   [Creational Patterns](#a-creational-patterns)
+    *   [Structural Patterns](#b-structural-patterns)
+    *   [Behavioral Patterns](#c-behavioral-patterns)
+4.  [Part 4: Standard Machine Coding Questions](#part-4-standard-machine-coding--lld-questions)
+
 ---
 
 # Part 1: Object-Oriented Programming (OOP) Deep Dive
 
-## 1. Core Concepts
+## 1. The 4 Pillars of OOP
 
-### Encapsulation
-Bundling data (variables) and methods (functions) that operate on the data into a single unit (class). It also involves restricting direct access to some of an object's components (data hiding).
+### A. Encapsulation
+**Definition:** Bundling data (variables) and methods (functions) into a single unit (class) and restricting direct access to some components.
+**Why:** Protects object integrity and hides implementation details.
 
 ```cpp
 #include <iostream>
-#include <string>
+using namespace std;
 
 class BankAccount {
 private:
-    double balance; // Hidden data
+    double balance; // Data hidden from outside world
 
 public:
-    BankAccount(double initialBalance) : balance(initialBalance) {}
-
-    void deposit(double amount) {
-        if (amount > 0) {
-            balance += amount;
-        }
+    BankAccount(double initial) {
+        if (initial >= 0) balance = initial;
+        else balance = 0;
     }
 
-    double getBalance() const { // Read-only access
+    // Public method to access private data (Getter)
+    double getBalance() const {
         return balance;
     }
+
+    // Public method to modify private data (Setter)
+    void deposit(double amount) {
+        if (amount > 0) balance += amount;
+    }
 };
 ```
 
-### Abstraction
-Hiding complex implementation details and showing only the necessary features of an object. Achieved using abstract classes and interfaces.
-
-### Inheritance
-Mechanism where a new class derives attributes and behavior from an existing class.
-
-### Polymorphism
-The ability of a message to be displayed in more than one form.
-*   **Compile-time (Static):** Function Overloading, Operator Overloading.
-*   **Run-time (Dynamic):** Virtual Functions (Function Overriding).
-
-## 2. Advanced OOP Concepts
-
-### Virtual Functions & V-Table
-A `virtual` function is a member function that you expect to be redefined in derived classes. When you refer to a derived class object using a pointer or a reference to the base class, you can call a virtual function for that object and execute the derived class's version of the function.
-
-**How it works (V-Table):**
-*   The compiler creates a **V-Table (Virtual Table)** for each class having virtual functions. This table contains addresses of virtual functions.
-*   The object contains a **VPTR (Virtual Pointer)** pointing to the V-Table of that class.
-*   At runtime, the correct function is resolved using VPTR.
+### B. Abstraction
+**Definition:** Hiding complex implementation details and showing only the essential features of the object.
+**Implementation:** Uses **Abstract Classes** (classes with at least one pure virtual function) and **Interfaces**.
 
 ```cpp
-#include <iostream>
-
-class Base {
-public:
-    virtual void show() { std::cout << "Base show" << std::endl; }
-    void print() { std::cout << "Base print" << std::endl; }
-    virtual ~Base() { std::cout << "Base Destructor" << std::endl; } // IMPORTANT: Virtual Destructor
-};
-
-class Derived : public Base {
-public:
-    void show() override { std::cout << "Derived show" << std::endl; }
-    void print() { std::cout << "Derived print" << std::endl; }
-    ~Derived() { std::cout << "Derived Destructor" << std::endl; }
-};
-
-int main() {
-    Base* bptr = new Derived();
-    
-    // Runtime Polymorphism (Virtual function)
-    bptr->show(); // Output: Derived show
-    
-    // Static Binding (Non-virtual function)
-    bptr->print(); // Output: Base print
-    
-    delete bptr; // Correctly calls Derived destructor then Base destructor because Base destructor is virtual
-    return 0;
-}
-```
-
-### Virtual Destructors
-**Critical Interview Question:** Why do we need virtual destructors?
-*   If the base class destructor is **not** virtual, deleting a derived class object through a base class pointer results in **undefined behavior** (usually the derived class destructor is NOT called, leading to memory leaks).
-
-### Abstract Classes (Interfaces)
-A class containing at least one **pure virtual function** (`= 0`) is an abstract class. You cannot instantiate it.
-
-```cpp
+// Abstract Class
 class Shape {
 public:
-    virtual void draw() = 0; // Pure virtual function
-    virtual ~Shape() {}
+    virtual void draw() = 0; // Pure Virtual Function
+    virtual ~Shape() {}      // Virtual Destructor (Crucial for abstract classes)
 };
 
 class Circle : public Shape {
 public:
     void draw() override {
-        std::cout << "Drawing Circle" << std::endl;
+        cout << "Drawing Circle" << endl;
+    }
+};
+
+class Rectangle : public Shape {
+public:
+    void draw() override {
+        cout << "Drawing Rectangle" << endl;
+    }
+};
+
+// Usage
+void renderShape(Shape* s) {
+    s->draw(); // Abstraction: We don't know what shape it is, we just know it draws.
+}
+```
+
+### C. Inheritance
+**Definition:** Mechanism where a new class acquires the properties and behavior of an existing class.
+**Modes:**
+*   `public`: Public members stay public, protected stay protected.
+*   `protected`: Public and protected members become protected.
+*   `private`: Public and protected members become private.
+
+```cpp
+class Animal {
+public:
+    void eat() { cout << "Eating..." << endl; }
+};
+
+class Dog : public Animal { // 'is-a' relationship
+public:
+    void bark() { cout << "Barking..." << endl; }
+};
+```
+
+### D. Polymorphism
+**Definition:** The ability of a message to be displayed in more than one form.
+
+**1. Compile-time Polymorphism (Static Binding)**
+*   **Function Overloading:** Same function name, different parameters.
+*   **Operator Overloading:** Customizing operators for classes.
+
+```cpp
+class Math {
+public:
+    int add(int a, int b) { return a + b; }
+    double add(double a, double b) { return a + b; } // Overloaded
+};
+```
+
+**2. Run-time Polymorphism (Dynamic Binding)**
+*   **Virtual Functions:** Resolved at runtime using V-Table.
+
+```cpp
+class Base {
+public:
+    virtual void show() { cout << "Base Show" << endl; }
+};
+
+class Derived : public Base {
+public:
+    void show() override { cout << "Derived Show" << endl; }
+};
+
+// Usage
+Base* b = new Derived();
+b->show(); // Output: Derived Show (Magic of Virtual Functions)
+```
+
+## 2. C++ OOP Internals & Essentials
+
+### A. How Member Functions Work (`this` Pointer)
+When you call `obj.func(10)`, the compiler actually converts it to `func(&obj, 10)`.
+The `this` pointer is a hidden first argument passed to all non-static member functions.
+
+```cpp
+class Test {
+    int x;
+public:
+    void setX(int x) {
+        this->x = x; // 'this' distinguishes member 'x' from argument 'x'
     }
 };
 ```
 
-### Diamond Problem (Multiple Inheritance)
-Occurs when two superclasses of a class have a common base class.
-**Solution:** Use `virtual` inheritance.
+### B. Constructors & Destructors
+*   **Default Constructor:** No args.
+*   **Parameterized Constructor:** With args.
+*   **Copy Constructor:** Creates a new object as a copy of an existing object.
+*   **Destructor:** Cleans up resources.
 
+**Initialization Lists (Performance Tip):** Always prefer initialization lists over assignment inside the body.
 ```cpp
-class A { public: int x; };
-class B : virtual public A {};
-class C : virtual public A {};
-class D : public B, public C {}; // D has only one copy of A's members
-```
-
----
-
-# Part 2: SOLID Principles
-
-## 1. Single Responsibility Principle (SRP)
-A class should have only one reason to change. It should have only one job.
-
-**Violation:**
-```cpp
-class User {
+class Entity {
+    int x, y;
 public:
-    void login(string username, string password) { /* logic */ }
-    void sendEmail(string email, string message) { /* logic */ } // Wrong: Email logic in User class
-    void logError(string error) { /* logic */ } // Wrong: Logging logic in User class
+    // Initialization List: Direct initialization (Faster)
+    Entity(int x, int y) : x(x), y(y) {} 
+    
+    // Assignment: Default init then assign (Slower)
+    // Entity(int x, int y) { this->x = x; this->y = y; } 
 };
 ```
 
-**Correct:**
+### C. Deep Copy vs Shallow Copy (Rule of 3)
+If your class manages raw pointers, the default copy constructor performs a **Shallow Copy** (copies the pointer address, not the data). You MUST implement a **Deep Copy**.
+
+**The Rule of 3:** If you define one of the following, you likely need all three:
+1.  Destructor
+2.  Copy Constructor
+3.  Copy Assignment Operator
+
+```cpp
+class String {
+private:
+    char* buffer;
+    int size;
+public:
+    String(const char* string) {
+        size = strlen(string);
+        buffer = new char[size + 1];
+        strcpy(buffer, string);
+    }
+
+    // 1. Copy Constructor (Deep Copy)
+    String(const String& other) : size(other.size) {
+        buffer = new char[size + 1];
+        strcpy(buffer, other.buffer);
+    }
+
+    // 2. Copy Assignment Operator
+    String& operator=(const String& other) {
+        if (this == &other) return *this; // Self-assignment check
+        delete[] buffer; // Clear existing
+        size = other.size;
+        buffer = new char[size + 1];
+        strcpy(buffer, other.buffer);
+        return *this;
+    }
+
+    // 3. Destructor
+    ~String() {
+        delete[] buffer;
+    }
+};
+```
+
+### D. Virtual Functions & V-Table (Under the Hood)
+*   **V-Table (Virtual Table):** A static array created by the compiler for every class that has virtual functions. It contains function pointers to the virtual functions.
+*   **VPTR (Virtual Pointer):** A hidden pointer added to the object instance (usually the first 4/8 bytes) that points to the class's V-Table.
+*   **Cost:** Extra memory for VPTR per object + Extra lookup time (dereferencing VPTR -> V-Table -> Function).
+
+### E. Virtual Destructor
+**ALWAYS** make the base class destructor `virtual` if you plan to inherit from it.
+**Reason:** If you `delete` a derived object via a base pointer, and the base destructor is NOT virtual, the derived destructor will NOT be called. Memory Leak!
+
+### F. Static Members
+*   **Static Variable:** Shared by ALL instances of the class. Stored in the data segment, not the object.
+*   **Static Function:** Can be called without an object (`Class::func()`). Can ONLY access static variables.
+
+```cpp
+class Counter {
+public:
+    static int count; // Declaration
+    Counter() { count++; }
+};
+int Counter::count = 0; // Definition
+```
+
+### G. Const Correctness
+*   **Const Variable:** Cannot be changed.
+*   **Const Method:** `void func() const { ... }`. Promises not to modify any member variables of the object. Can be called on `const` objects.
+
+### H. Friend
+Allows a function or another class to access `private` and `protected` members.
+**Note:** Breaks encapsulation, use sparingly.
+```cpp
+class Box {
+private:
+    int width;
+public:
+    friend void printWidth(Box b); // Friend function
+};
+
+void printWidth(Box b) {
+    cout << b.width << endl; // Allowed
+}
+```
+
+### I. Diamond Problem (Multiple Inheritance)
+When `D` inherits from `B` and `C`, and both `B` and `C` inherit from `A`. `D` gets two copies of `A`.
+**Fix:** Virtual Inheritance (`class B : virtual public A`).
+
+### J. Padding & Alignment
+Compilers add padding bytes to ensure data is aligned in memory (e.g., integers at addresses divisible by 4).
+*   `class Empty {};` -> Size is **1 byte** (to ensure unique address).
+*   `class A { char c; int i; };` -> Size is likely **8 bytes** (1 byte char + 3 bytes padding + 4 bytes int).
+
+
+# Part 2: SOLID Principles
+
+SOLID is a mnemonic for five design principles intended to make software designs more understandable, flexible, and maintainable.
+
+## 1. Single Responsibility Principle (SRP)
+**Definition:** A class should have only one reason to change. It should have only one job or responsibility.
+**Why:** If a class does too many things, changing one thing might break others. It leads to "God Objects".
+**Analogy:** A Swiss Army Knife is cool, but for professional work, you use a dedicated screwdriver, a dedicated knife, etc.
+
+**Violation (The "God" Class):**
+```cpp
+class User {
+public:
+    void login(string username, string password) { /* Auth Logic */ }
+    void sendEmail(string message) { /* Email Logic */ } 
+    void logError(string error) { /* Logging Logic */ }
+};
+// Problem: If Email logic changes, we modify User class. If Auth changes, we modify User class.
+```
+
+**Correct (Separation of Concerns):**
 ```cpp
 class UserAuth {
 public:
-    void login(string username, string password) { /* ... */ }
+    void login(string u, string p) { /* ... */ }
 };
 
 class EmailService {
 public:
-    void sendEmail(string email, string message) { /* ... */ }
+    void sendEmail(string m) { /* ... */ }
 };
 
 class Logger {
 public:
-    void logError(string error) { /* ... */ }
+    void logError(string e) { /* ... */ }
 };
+// Benefit: Changes in EmailService don't affect UserAuth.
 ```
 
 ## 2. Open/Closed Principle (OCP)
-Software entities should be **open for extension, but closed for modification**.
+**Definition:** Software entities (classes, modules, functions) should be **open for extension**, but **closed for modification**.
+**Why:** You should be able to add new functionality without touching existing, tested code.
+**Analogy:** Extensions on a browser. You add a new extension to get new features without rewriting the browser's source code.
 
-**Violation:**
+**Violation (Modification required for new features):**
 ```cpp
 class Rectangle { public: double width, height; };
 class Circle { public: double radius; };
@@ -165,18 +316,18 @@ class Circle { public: double radius; };
 class AreaCalculator {
 public:
     double calculate(void* shape, string type) {
-        if (type == "Rectangle") { /* calculate rect area */ }
-        else if (type == "Circle") { /* calculate circle area */ }
-        // Adding a new shape requires modifying this class!
+        if (type == "Rectangle") { /* calc rect */ }
+        else if (type == "Circle") { /* calc circle */ }
+        // To add "Triangle", we MUST modify this class! Bad!
     }
 };
 ```
 
-**Correct:**
+**Correct (Extension via Polymorphism):**
 ```cpp
 class Shape {
 public:
-    virtual double area() = 0;
+    virtual double area() = 0; // Abstraction
 };
 
 class Rectangle : public Shape {
@@ -191,23 +342,51 @@ public:
     double area() override { return 3.14 * radius * radius; }
 };
 
-// No modification needed here for new shapes
+// New Shape? Just create a new class. No change to calculateArea!
 double calculateArea(Shape* shape) {
     return shape->area();
 }
 ```
 
 ## 3. Liskov Substitution Principle (LSP)
-Objects of a superclass should be replaceable with objects of its subclasses without breaking the application.
-*   "If it looks like a duck, quacks like a duck, but needs batteries – you have the wrong abstraction."
+**Definition:** Objects of a superclass should be replaceable with objects of its subclasses without breaking the application.
+**Why:** Ensures inheritance hierarchies make semantic sense.
+**Analogy:** If it looks like a duck, quacks like a duck, but needs batteries – you have the wrong abstraction.
 
-**Violation (Classic Square-Rectangle problem):**
-If `Square` inherits from `Rectangle` and setting width changes height automatically, it might break code expecting a `Rectangle` where width and height are independent.
+**Violation (Square is NOT a Rectangle in code):**
+Mathematically, a Square is a Rectangle. But in code, if `Rectangle` has `setWidth` and `setHeight`, `Square` breaks the behavior because setting width *must* change height.
+
+```cpp
+class Rectangle {
+public:
+    virtual void setWidth(int w) { width = w; }
+    virtual void setHeight(int h) { height = h; }
+protected:
+    int width, height;
+};
+
+class Square : public Rectangle {
+public:
+    // Violation: Changing width changes height unexpectedly for a "Rectangle" user
+    void setWidth(int w) override { width = height = w; }
+    void setHeight(int h) override { width = height = h; }
+};
+
+void process(Rectangle& r) {
+    r.setWidth(5);
+    r.setHeight(10);
+    // Expect area = 50. But if r is Square, area is 100! Logic Broken.
+}
+```
+
+**Correct:** Separate them or use a common `Shape` interface without mutable setters that imply independence.
 
 ## 4. Interface Segregation Principle (ISP)
-Clients should not be forced to depend upon interfaces that they do not use. Split large interfaces into smaller, specific ones.
+**Definition:** Clients should not be forced to depend upon interfaces that they do not use.
+**Why:** Prevents "Fat Interfaces". Implementing a huge interface forces you to write dummy methods.
+**Analogy:** USB ports. You don't have one giant port for everything; you have specific ports (or protocols) so a mouse doesn't need to know how to be a monitor.
 
-**Violation:**
+**Violation (Fat Interface):**
 ```cpp
 class Worker {
 public:
@@ -222,7 +401,7 @@ public:
 };
 ```
 
-**Correct:**
+**Correct (Segregated Interfaces):**
 ```cpp
 class Workable {
 public:
@@ -247,9 +426,11 @@ public:
 ```
 
 ## 5. Dependency Inversion Principle (DIP)
-High-level modules should not depend on low-level modules. Both should depend on abstractions.
+**Definition:** High-level modules should not depend on low-level modules. Both should depend on abstractions.
+**Why:** Decouples code. You can swap out low-level details (like database, UI, hardware) without changing high-level business logic.
+**Analogy:** You plug your laptop into a wall socket (Abstraction). You don't solder it directly to the electrical wiring (Concrete Implementation).
 
-**Violation:**
+**Violation (Tight Coupling):**
 ```cpp
 class LightBulb {
 public:
@@ -266,30 +447,34 @@ public:
 };
 ```
 
-**Correct:**
+**Correct (Dependency on Abstraction):**
 ```cpp
-class Switchable { // Abstraction
+// Abstraction
+class Switchable { 
 public:
     virtual void turnOn() = 0;
     virtual void turnOff() = 0;
 };
 
+// Low-level module
 class LightBulb : public Switchable {
 public:
     void turnOn() override { /*...*/ }
     void turnOff() override { /*...*/ }
 };
 
+// Low-level module
 class Fan : public Switchable {
 public:
     void turnOn() override { /*...*/ }
     void turnOff() override { /*...*/ }
 };
 
+// High-level module
 class Switch {
-    Switchable& device; // Depends on abstraction
+    Switchable& device; // Depends on abstraction, not concrete class
 public:
-    Switch(Switchable& dev) : device(dev) {}
+    Switch(Switchable& dev) : device(dev) {} // Dependency Injection
     void operate() {
         device.turnOn();
     }
@@ -297,91 +482,91 @@ public:
 ```
 
 
+
 # Part 3: Design Patterns (Gang of Four)
 
 ## A. Creational Patterns
-Deal with object creation mechanisms.
+**Intent:** Deal with object creation mechanisms, increasing flexibility and reuse of existing code.
 
 ### 1. Singleton
-Ensures a class has only one instance and provides a global point of access to it.
-
-```cpp
-class Singleton {
-private:
-    static Singleton* instance;
-    Singleton() {} // Private constructor
-
-public:
-    // Delete copy constructor and assignment operator
-    Singleton(const Singleton&) = delete;
-    void operator=(const Singleton&) = delete;
-
-    static Singleton* getInstance() {
-        if (instance == nullptr) {
-            instance = new Singleton();
-        }
-        return instance;
-    }
-};
-
-Singleton* Singleton::instance = nullptr;
-```
-*Thread-safe version (Meyers' Singleton):*
+**Intent:** Ensure a class has only one instance and provide a global point of access to it.
+**Analogy:** The Government. A country can have only one official government.
+**Code (Meyers' Singleton - Thread Safe in C++11+):**
 ```cpp
 class Singleton {
 public:
     static Singleton& getInstance() {
-        static Singleton instance; // Guaranteed to be thread-safe in C++11
+        static Singleton instance; // Initialized once, thread-safe
         return instance;
     }
+    // Delete copy/move to prevent duplicates
     Singleton(const Singleton&) = delete;
     void operator=(const Singleton&) = delete;
 private:
-    Singleton() {}
+    Singleton() {} // Private Constructor
 };
 ```
 
 ### 2. Factory Method
-Defines an interface for creating an object, but lets subclasses alter the type of objects that will be created.
+**Intent:** Define an interface for creating an object, but let subclasses decide which class to instantiate.
+**Analogy:** Logistics. A logistics company can deliver by Truck or Ship. The `planDelivery` method is the same, but the `createTransport` method returns a different vehicle.
 
 ```cpp
-class Product { public: virtual void use() = 0; };
-class ConcreteProductA : public Product { public: void use() override { cout << "Using A" << endl; } };
-class ConcreteProductB : public Product { public: void use() override { cout << "Using B" << endl; } };
-
-class Creator {
+class Transport {
 public:
-    virtual Product* createProduct() = 0;
-    void someOperation() {
-        Product* p = createProduct();
-        p->use();
-        delete p;
-    }
+    virtual void deliver() = 0;
+    virtual ~Transport() {}
 };
 
-class ConcreteCreatorA : public Creator {
+class Truck : public Transport {
 public:
-    Product* createProduct() override { return new ConcreteProductA(); }
+    void deliver() override { cout << "Deliver by Land" << endl; }
+};
+
+class Ship : public Transport {
+public:
+    void deliver() override { cout << "Deliver by Sea" << endl; }
+};
+
+class Logistics {
+public:
+    virtual Transport* createTransport() = 0; // Factory Method
+    void planDelivery() {
+        Transport* t = createTransport();
+        t->deliver();
+        delete t;
+    }
+    virtual ~Logistics() {}
+};
+
+class RoadLogistics : public Logistics {
+public:
+    Transport* createTransport() override { return new Truck(); }
 };
 ```
 
 ### 3. Abstract Factory
-Produces families of related objects without specifying their concrete classes.
+**Intent:** Produce families of related objects without specifying their concrete classes.
+**Analogy:** Furniture Shop. You can buy a "Modern" set (Chair + Sofa) or a "Victorian" set. You don't mix Modern Chair with Victorian Sofa.
 
 ```cpp
+// Abstract Products
 class Chair { public: virtual void sit() = 0; };
 class Sofa { public: virtual void lie() = 0; };
 
-class ModernChair : public Chair { public: void sit() override { cout << "Modern Chair" << endl; } };
-class ModernSofa : public Sofa { public: void lie() override { cout << "Modern Sofa" << endl; } };
+// Concrete Products
+class ModernChair : public Chair { public: void sit() override { cout << "Sitting on Modern Chair" << endl; } };
+class ModernSofa : public Sofa { public: void lie() override { cout << "Lying on Modern Sofa" << endl; } };
 
+// Abstract Factory
 class FurnitureFactory {
 public:
     virtual Chair* createChair() = 0;
     virtual Sofa* createSofa() = 0;
 };
 
-class ModernFurnitureFactory : public FurnitureFactory {
+// Concrete Factory
+class ModernFactory : public FurnitureFactory {
 public:
     Chair* createChair() override { return new ModernChair(); }
     Sofa* createSofa() override { return new ModernSofa(); }
@@ -389,221 +574,553 @@ public:
 ```
 
 ### 4. Builder
-Constructs complex objects step by step.
+**Intent:** Construct a complex object step by step.
+**Analogy:** Subway Sandwich. You choose bread, then meat, then veggies, then sauce. The process creates a complex "Sandwich" object.
 
 ```cpp
-class House {
+class Pizza {
 public:
-    string walls, roof, garage;
-    void show() { cout << walls << ", " << roof << ", " << garage << endl; }
+    string dough, sauce, topping;
+    void show() { cout << dough << " + " << sauce << " + " << topping << endl; }
 };
 
-class HouseBuilder {
+class PizzaBuilder {
 protected:
-    House* house;
+    Pizza* pizza;
 public:
-    HouseBuilder() { house = new House(); }
-    virtual void buildWalls() = 0;
-    virtual void buildRoof() = 0;
-    House* getResult() { return house; }
+    PizzaBuilder() { pizza = new Pizza(); }
+    virtual void buildDough() = 0;
+    virtual void buildSauce() = 0;
+    virtual void buildTopping() = 0;
+    Pizza* getPizza() { return pizza; }
 };
 
-class StoneHouseBuilder : public HouseBuilder {
+class SpicyPizzaBuilder : public PizzaBuilder {
 public:
-    void buildWalls() override { house->walls = "Stone Walls"; }
-    void buildRoof() override { house->roof = "Stone Roof"; }
+    void buildDough() override { pizza->dough = "Pan Dough"; }
+    void buildSauce() override { pizza->sauce = "Hot Sauce"; }
+    void buildTopping() override { pizza->topping = "Pepperoni"; }
 };
 
 class Director {
 public:
-    void construct(HouseBuilder* builder) {
-        builder->buildWalls();
-        builder->buildRoof();
+    void make(PizzaBuilder* pb) {
+        pb->buildDough();
+        pb->buildSauce();
+        pb->buildTopping();
     }
 };
 ```
 
 ### 5. Prototype
-Creates new objects by copying an existing object (cloning).
+**Intent:** Create new objects by copying an existing object (cloning).
+**Analogy:** Cell Division (Mitosis). A cell splits to create an identical copy of itself.
 
 ```cpp
 class Prototype {
 public:
     virtual Prototype* clone() = 0;
+    virtual ~Prototype() {}
 };
 
-class ConcretePrototype : public Prototype {
-    int field;
+class Robot : public Prototype {
+    int id;
 public:
-    ConcretePrototype(int f) : field(f) {}
+    Robot(int i) : id(i) {}
     Prototype* clone() override {
-        return new ConcretePrototype(*this);
+        return new Robot(*this); // Copy Constructor
     }
 };
 ```
 
 ## B. Structural Patterns
-Deal with object composition.
+**Intent:** Explain how to assemble objects and classes into larger structures while keeping these structures flexible and efficient.
 
 ### 1. Adapter
-Allows objects with incompatible interfaces to collaborate.
+**Intent:** Allows objects with incompatible interfaces to collaborate.
+**Analogy:** Power Adapter. It translates the interface of a US plug to a European socket.
 
 ```cpp
-class Target {
+// Target Interface (What client expects)
+class MediaPlayer {
 public:
-    virtual void request() { cout << "Target request" << endl; }
+    virtual void play(string type, string file) = 0;
 };
 
-class Adaptee {
+// Adaptee (Incompatible interface)
+class AdvancedMediaPlayer {
 public:
-    void specificRequest() { cout << "Adaptee specific request" << endl; }
+    void playVlc(string file) { cout << "Playing vlc: " << file << endl; }
 };
 
-class Adapter : public Target {
-private:
-    Adaptee* adaptee;
+// Adapter
+class MediaAdapter : public MediaPlayer {
+    AdvancedMediaPlayer* advancedMusicPlayer;
 public:
-    Adapter(Adaptee* a) : adaptee(a) {}
-    void request() override {
-        adaptee->specificRequest();
+    MediaAdapter() { advancedMusicPlayer = new AdvancedMediaPlayer(); }
+    void play(string type, string file) override {
+        if (type == "vlc") advancedMusicPlayer->playVlc(file);
     }
 };
 ```
 
 ### 2. Bridge
-Splits a large class or a set of closely related classes into two separate hierarchies—abstraction and implementation—which can be developed independently.
+**Intent:** Split a large class into two separate hierarchies (Abstraction and Implementation) so they can vary independently.
+**Analogy:** Remote Control (Abstraction) and TV (Implementation). You can have different remotes working with different TVs.
 
 ```cpp
-class Implementor {
+// Implementation
+class Device {
 public:
-    virtual void operationImpl() = 0;
+    virtual void turnOn() = 0;
+    virtual void turnOff() = 0;
 };
 
-class ConcreteImplementorA : public Implementor {
+class TV : public Device {
 public:
-    void operationImpl() override { cout << "Impl A" << endl; }
+    void turnOn() override { cout << "TV On" << endl; }
+    void turnOff() override { cout << "TV Off" << endl; }
 };
 
-class Abstraction {
+// Abstraction
+class Remote {
 protected:
-    Implementor* impl;
+    Device* device;
 public:
-    Abstraction(Implementor* i) : impl(i) {}
-    virtual void operation() { impl->operationImpl(); }
+    Remote(Device* d) : device(d) {}
+    virtual void togglePower() {
+        device->turnOn();
+        device->turnOff();
+    }
 };
 ```
 
 ### 3. Composite
-Composes objects into tree structures to represent part-whole hierarchies.
+**Intent:** Compose objects into tree structures to represent part-whole hierarchies. Treat individual objects and compositions uniformly.
+**Analogy:** File System. A Folder can contain Files or other Folders. You can "delete" a File or a Folder (which deletes everything inside) using the same command.
 
 ```cpp
-#include <vector>
-class Component {
+class FileSystemComponent {
 public:
-    virtual void operation() = 0;
+    virtual void showDetails() = 0;
 };
 
-class Leaf : public Component {
+class File : public FileSystemComponent {
+    string name;
 public:
-    void operation() override { cout << "Leaf" << endl; }
+    File(string n) : name(n) {}
+    void showDetails() override { cout << "File: " << name << endl; }
 };
 
-class Composite : public Component {
-    vector<Component*> children;
+class Folder : public FileSystemComponent {
+    string name;
+    vector<FileSystemComponent*> children;
 public:
-    void add(Component* c) { children.push_back(c); }
-    void operation() override {
-        for (auto c : children) c->operation();
+    Folder(string n) : name(n) {}
+    void add(FileSystemComponent* c) { children.push_back(c); }
+    void showDetails() override {
+        cout << "Folder: " << name << endl;
+        for (auto c : children) c->showDetails();
     }
 };
 ```
 
 ### 4. Decorator
-Attaches new behaviors to objects by placing these objects inside special wrapper objects that contain the behaviors.
+**Intent:** Attach new behaviors to objects dynamically by placing them inside wrapper objects.
+**Analogy:** Clothing. You wear a shirt. If it's cold, you wear a jacket *over* the shirt. If it's raining, you wear a raincoat *over* the jacket.
 
 ```cpp
 class Coffee {
 public:
     virtual double cost() = 0;
+    virtual string desc() = 0;
 };
 
 class SimpleCoffee : public Coffee {
 public:
-    double cost() override { return 10.0; }
+    double cost() override { return 5.0; }
+    string desc() override { return "Coffee"; }
 };
 
-class CoffeeDecorator : public Coffee {
-protected:
+class MilkDecorator : public Coffee {
     Coffee* coffee;
 public:
-    CoffeeDecorator(Coffee* c) : coffee(c) {}
-};
-
-class MilkDecorator : public CoffeeDecorator {
-public:
-    MilkDecorator(Coffee* c) : CoffeeDecorator(c) {}
+    MilkDecorator(Coffee* c) : coffee(c) {}
     double cost() override { return coffee->cost() + 2.0; }
+    string desc() override { return coffee->desc() + ", Milk"; }
 };
 ```
 
 ### 5. Facade
-Provides a simplified interface to a library, a framework, or any other complex set of classes.
+**Intent:** Provide a simplified interface to a library, a framework, or any other complex set of classes.
+**Analogy:** Car Starter Button. You press one button to start the car. Behind the scenes, it triggers the battery, starter motor, fuel injection, etc.
 
 ```cpp
-class CPU { public: void freeze() {} void jump(long position) {} void execute() {} };
-class Memory { public: void load(long position, char* data) {} };
-class HardDrive { public: char* read(long lba, int size) { return nullptr; } };
+class CPU { public: void freeze() { cout << "CPU Freeze" << endl; } };
+class Memory { public: void load() { cout << "Memory Load" << endl; } };
+class HardDrive { public: void read() { cout << "HD Read" << endl; } };
 
 class ComputerFacade {
-    CPU cpu; Memory memory; HardDrive hardDrive;
+    CPU cpu; Memory ram; HardDrive hd;
 public:
     void start() {
         cpu.freeze();
-        memory.load(0, hardDrive.read(0, 1024));
-        cpu.jump(0);
-        cpu.execute();
+        ram.load();
+        hd.read();
+        cout << "Computer Started" << endl;
     }
 };
 ```
 
 ### 6. Flyweight
-Lets you fit more objects into the available amount of RAM by sharing common parts of state between multiple objects instead of keeping all of the data in each object.
+**Intent:** Fit more objects into RAM by sharing common parts of state between multiple objects.
+**Analogy:** Counter-Strike Game. You have 1000 terrorists. They all look the same (same 3D model, texture). You store the model *once* and just change the position (x, y, z) for each terrorist.
 
 ```cpp
+// Intrinsic State (Shared)
 class TreeType {
-    string name;
-    string color;
-    // Shared state
+    string name, color, texture;
+public:
+    TreeType(string n, string c, string t) : name(n), color(c), texture(t) {}
+    void draw(int x, int y) { cout << "Drawing " << name << " at " << x << "," << y << endl; }
 };
 
+// Extrinsic State (Unique)
 class Tree {
     int x, y;
-    TreeType* type; // Pointer to shared state
+    TreeType* type;
+public:
+    Tree(int x, int y, TreeType* t) : x(x), y(y), type(t) {}
+    void draw() { type->draw(x, y); }
 };
 ```
 
 ### 7. Proxy
-Provides a placeholder for another object to control access to it.
+**Intent:** Provide a placeholder for another object to control access to it.
+**Analogy:** Credit Card. It's a proxy for the cash in your bank account.
 
 ```cpp
-class Subject { public: virtual void request() = 0; };
-class RealSubject : public Subject { public: void request() override { cout << "Real Request" << endl; } };
-
-class Proxy : public Subject {
-    RealSubject* realSubject;
+class Internet {
 public:
-    void request() override {
-        if (checkAccess()) {
-            if (!realSubject) realSubject = new RealSubject();
-            realSubject->request();
-        }
+    virtual void connectTo(string site) = 0;
+};
+
+class RealInternet : public Internet {
+public:
+    void connectTo(string site) override { cout << "Connecting to " << site << endl; }
+};
+
+class ProxyInternet : public Internet {
+    RealInternet* realInternet;
+    // Banned sites list...
+public:
+    ProxyInternet() { realInternet = new RealInternet(); }
+    void connectTo(string site) override {
+        if (site == "banned.com") cout << "Access Denied" << endl;
+        else realInternet->connectTo(site);
     }
-    bool checkAccess() { return true; }
 };
 ```
 
 
+
 ## C. Behavioral Patterns
+**Intent:** Deal with algorithms and the assignment of responsibilities between objects.
+
+### 1. Chain of Responsibility
+**Intent:** Pass requests along a chain of handlers. Upon receiving a request, each handler decides either to process the request or to pass it to the next handler in the chain.
+**Analogy:** Tech Support. You call support (L1). If they can't fix it, they pass you to a Specialist (L2). If they can't fix it, they pass you to an Engineer (L3).
+
+```cpp
+class Handler {
+protected:
+    Handler* next;
+public:
+    Handler() : next(nullptr) {}
+    void setNext(Handler* h) { next = h; }
+    virtual void handle(int level) {
+        if (next) next->handle(level);
+    }
+};
+
+class Level1Support : public Handler {
+public:
+    void handle(int level) override {
+        if (level == 1) cout << "Level 1 fixed it." << endl;
+        else Handler::handle(level);
+    }
+};
+
+class Level2Support : public Handler {
+public:
+    void handle(int level) override {
+        if (level == 2) cout << "Level 2 fixed it." << endl;
+        else Handler::handle(level);
+    }
+};
+```
+
+### 2. Command
+**Intent:** Encapsulate a request as an object, thereby letting you parameterize clients with different requests, queue or log requests, and support undoable operations.
+**Analogy:** Restaurant Order. You give an order (Command) to the waiter (Invoker). The waiter hands it to the chef (Receiver). You don't know who the chef is, you just want the meal.
+
+```cpp
+// Command Interface
+class Command {
+public:
+    virtual void execute() = 0;
+};
+
+// Receiver
+class Light {
+public:
+    void on() { cout << "Light On" << endl; }
+    void off() { cout << "Light Off" << endl; }
+};
+
+// Concrete Command
+class LightOnCommand : public Command {
+    Light* light;
+public:
+    LightOnCommand(Light* l) : light(l) {}
+    void execute() override { light->on(); }
+};
+
+// Invoker
+class RemoteControl {
+    Command* command;
+public:
+    void setCommand(Command* c) { command = c; }
+    void pressButton() { command->execute(); }
+};
+```
+
+### 3. Interpreter
+**Intent:** Given a language, define a representation for its grammar along with an interpreter that uses the representation to interpret sentences in the language.
+**Analogy:** Musicians. They read sheet music (Language) and interpret the notes to play music.
+
+```cpp
+class Expression {
+public:
+    virtual bool interpret(string context) = 0;
+};
+
+class TerminalExpression : public Expression {
+    string data;
+public:
+    TerminalExpression(string data) : data(data) {}
+    bool interpret(string context) override {
+        return context.find(data) != string::npos;
+    }
+};
+
+class OrExpression : public Expression {
+    Expression *expr1, *expr2;
+public:
+    OrExpression(Expression* e1, Expression* e2) : expr1(e1), expr2(e2) {}
+    bool interpret(string context) override {
+        return expr1->interpret(context) || expr2->interpret(context);
+    }
+};
+```
+
+### 4. Iterator
+**Intent:** Provide a way to access the elements of an aggregate object sequentially without exposing its underlying representation.
+**Analogy:** TV Remote. You press "Next Channel" to iterate through channels. You don't need to know how the TV stores the channel frequencies.
+
+```cpp
+class Iterator {
+public:
+    virtual bool hasNext() = 0;
+    virtual int next() = 0;
+};
+
+class Container {
+public:
+    virtual Iterator* createIterator() = 0;
+};
+```
+
+### 5. Mediator
+**Intent:** Define an object that encapsulates how a set of objects interact. Promotes loose coupling by keeping objects from referring to each other explicitly.
+**Analogy:** Air Traffic Control (ATC). Planes don't talk to each other directly ("I'm landing, you move"). They talk to ATC, and ATC tells them what to do.
+
+```cpp
+class Mediator;
+
+class Colleague {
+protected:
+    Mediator* mediator;
+public:
+    Colleague(Mediator* m) : mediator(m) {}
+    virtual void send(string message) = 0;
+    virtual void receive(string message) = 0;
+};
+
+class ConcreteMediator : public Mediator {
+    // Manages colleagues and communication logic
+};
+```
+
+### 6. Memento
+**Intent:** Capture and externalize an object's internal state so that the object can be restored to this state later.
+**Analogy:** Save Game. You save your game state before a boss fight. If you die, you reload (restore) that state.
+
+```cpp
+class Memento {
+    string state;
+public:
+    Memento(string s) : state(s) {}
+    string getState() { return state; }
+};
+
+class Originator {
+    string state;
+public:
+    void setState(string s) { state = s; }
+    Memento* save() { return new Memento(state); }
+    void restore(Memento* m) { state = m->getState(); }
+};
+```
+
+### 7. Observer
+**Intent:** Define a subscription mechanism to notify multiple objects about any events that happen to the object they're observing.
+**Analogy:** YouTube Subscription. You subscribe to a channel. When they upload a video (Event), you get a notification.
+
+```cpp
+class Observer {
+public:
+    virtual void update(int state) = 0;
+};
+
+class Subject {
+    vector<Observer*> observers;
+    int state;
+public:
+    void attach(Observer* o) { observers.push_back(o); }
+    void setState(int s) {
+        state = s;
+        notify();
+    }
+    void notify() {
+        for (auto o : observers) o->update(state);
+    }
+};
+
+class ConcreteObserver : public Observer {
+public:
+    void update(int state) override { cout << "Observer received state: " << state << endl; }
+};
+```
+
+### 8. State
+**Intent:** Let an object alter its behavior when its internal state changes. It appears as if the object changed its class.
+**Analogy:** Mobile Phone. If state is "Ringing", pressing volume button silences it. If state is "Unlocked", pressing volume button changes volume.
+
+```cpp
+class State {
+public:
+    virtual void handle() = 0;
+};
+
+class Context {
+    State* state;
+public:
+    void setState(State* s) { state = s; }
+    void request() { state->handle(); }
+};
+
+class ConcreteStateA : public State {
+public:
+    void handle() override { cout << "Handling in State A" << endl; }
+};
+```
+
+### 9. Strategy
+**Intent:** Define a family of algorithms, encapsulate each one, and make them interchangeable. Strategy lets the algorithm vary independently from clients that use it.
+**Analogy:** Navigation App. You can choose "Walk", "Car", or "Public Transport". The goal (A to B) is the same, but the strategy (Algorithm) is different.
+
+```cpp
+class Strategy {
+public:
+    virtual int execute(int a, int b) = 0;
+};
+
+class AddStrategy : public Strategy {
+public:
+    int execute(int a, int b) override { return a + b; }
+};
+
+class MultiplyStrategy : public Strategy {
+public:
+    int execute(int a, int b) override { return a * b; }
+};
+
+class Context {
+    Strategy* strategy;
+public:
+    Context(Strategy* s) : strategy(s) {}
+    int executeStrategy(int a, int b) { return strategy->execute(a, b); }
+};
+```
+
+### 10. Template Method
+**Intent:** Define the skeleton of an algorithm in the superclass but let subclasses override specific steps of the algorithm without changing its structure.
+**Analogy:** Building a House. The steps are fixed: Foundation -> Walls -> Roof. But a "Wooden House" builds wooden walls, while a "Brick House" builds brick walls.
+
+```cpp
+class Game {
+public:
+    // Template Method (Final)
+    void play() {
+        initialize();
+        startPlay();
+        endPlay();
+    }
+protected:
+    virtual void initialize() = 0;
+    virtual void startPlay() = 0;
+    virtual void endPlay() = 0;
+};
+
+class Cricket : public Game {
+protected:
+    void initialize() override { cout << "Cricket Init" << endl; }
+    void startPlay() override { cout << "Cricket Start" << endl; }
+    void endPlay() override { cout << "Cricket End" << endl; }
+};
+```
+
+### 11. Visitor
+**Intent:** Separate algorithms from the objects on which they operate.
+**Analogy:** Taxi Driver. The driver (Visitor) goes to a Hotel (Element) and drops a passenger. Then goes to a Hospital (Element) and picks up a passenger. The places don't change, but the driver performs different actions on them.
+
+```cpp
+class Element;
+class Visitor {
+public:
+    virtual void visit(Element* e) = 0;
+};
+
+class Element {
+public:
+    virtual void accept(Visitor* v) = 0;
+};
+
+class ConcreteElement : public Element {
+public:
+    void accept(Visitor* v) override { v->visit(this); }
+    string operation() { return "Element"; }
+};
+
+class ConcreteVisitor : public Visitor {
+public:
+    void visit(Element* e) override {
+        cout << "Visited " << ((ConcreteElement*)e)->operation() << endl;
+    }
+};
+```
+
 Deal with algorithms and the assignment of responsibilities between objects.
 
 ### 1. Chain of Responsibility
