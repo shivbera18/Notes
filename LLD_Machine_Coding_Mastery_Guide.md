@@ -1388,157 +1388,184 @@ public:
 
 # Part 4: Standard Machine Coding / LLD Questions
 
-## 1. Rate Limiter (Token Bucket Algorithm)
-**Problem:** Design a rate limiter that allows `N` requests per `T` seconds.
+This section provides detailed, step-by-step solutions for common machine coding rounds.
+**Approach for every problem:**
+1.  **Clarify Requirements:** Ask questions (What features? Scale?).
+2.  **Define Entities:** Identify core classes.
+3.  **Design Interfaces:** Define methods and relationships.
+4.  **Implement:** Write clean, modular C++ code.
 
+---
+
+## 1. Design a Parking Lot System
+**Requirements:**
+*   Multiple floors, multiple entry/exit points.
+*   Different spot types (Compact, Large, Handicapped, Motorcycle).
+*   Ticketing system: Issue ticket at entry, calculate fee at exit.
+*   Payment: Cash, Credit Card.
+
+**Core Entities:**
+*   `ParkingLot`: Singleton, manages floors.
+*   `ParkingFloor`: Manages spots.
+*   `ParkingSpot`: Base class for spots.
+*   `Vehicle`: Base class for vehicles.
+*   `Ticket`: Tracks entry time and spot.
+*   `Gate`: Entry and Exit gates.
+
+**Code:**
 ```cpp
 #include <iostream>
-#include <chrono>
-#include <thread>
-#include <mutex>
+#include <vector>
+#include <string>
+#include <ctime>
+#include <map>
 
-class TokenBucket {
-private:
-    long maxTokens;
-    long currentTokens;
-    long refillRate; // tokens per second
-    std::chrono::steady_clock::time_point lastRefillTimestamp;
-    std::mutex mtx;
+using namespace std;
 
-    void refill() {
-        auto now = std::chrono::steady_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - lastRefillTimestamp).count();
-        
-        if (duration > 0) {
-            long tokensToAdd = duration * refillRate;
-            currentTokens = std::min(maxTokens, currentTokens + tokensToAdd);
-            lastRefillTimestamp = now;
-        }
-    }
+// Enums
+enum VehicleType { MOTORCYCLE, CAR, TRUCK };
+enum SpotType { MOTORCYCLE_SPOT, COMPACT_SPOT, LARGE_SPOT };
 
-public:
-    TokenBucket(long maxTokens, long refillRate) 
-        : maxTokens(maxTokens), currentTokens(maxTokens), refillRate(refillRate) {
-        lastRefillTimestamp = std::chrono::steady_clock::now();
-    }
-
-    bool allowRequest(int tokens = 1) {
-        std::lock_guard<std::mutex> lock(mtx);
-        refill();
-        if (currentTokens >= tokens) {
-            currentTokens -= tokens;
-            return true;
-        }
-        return false;
-    }
-};
-```
-
-## 2. Notification System
-**Problem:** Design a notification system that can send emails, SMS, and push notifications.
-
-```cpp
-// Interface for Notification Channels
-class NotificationChannel {
-public:
-    virtual void send(string to, string message) = 0;
-};
-
-class EmailChannel : public NotificationChannel {
-public:
-    void send(string to, string message) override { cout << "Email to " << to << ": " << message << endl; }
-};
-
-class SMSChannel : public NotificationChannel {
-public:
-    void send(string to, string message) override { cout << "SMS to " << to << ": " << message << endl; }
-};
-
-// Factory for creating channels
-class ChannelFactory {
-public:
-    static NotificationChannel* createChannel(string type) {
-        if (type == "EMAIL") return new EmailChannel();
-        else if (type == "SMS") return new SMSChannel();
-        return nullptr;
-    }
-};
-
-// Notification Service (Facade)
-class NotificationService {
-public:
-    void sendNotification(string type, string to, string message) {
-        NotificationChannel* channel = ChannelFactory::createChannel(type);
-        if (channel) {
-            channel->send(to, message);
-            delete channel;
-        }
-    }
-};
-```
-
-## 3. Parking Lot System
-**Problem:** Design a parking lot with different spot types and pricing.
-
-```cpp
-enum VehicleType { CAR, BIKE, TRUCK };
-
+// --- Vehicle Hierarchy ---
 class Vehicle {
-public:
     string licensePlate;
     VehicleType type;
+public:
     Vehicle(string plate, VehicleType t) : licensePlate(plate), type(t) {}
+    VehicleType getType() { return type; }
+    string getLicensePlate() { return licensePlate; }
 };
 
-class ParkingSpot {
-public:
-    int id;
-    bool isFree;
-    VehicleType type;
-    Vehicle* vehicle;
+class Car : public Vehicle { public: Car(string plate) : Vehicle(plate, CAR) {} };
+class Motorcycle : public Vehicle { public: Motorcycle(string plate) : Vehicle(plate, MOTORCYCLE) {} };
 
-    ParkingSpot(int id, VehicleType t) : id(id), isFree(true), type(t), vehicle(nullptr) {}
+// --- Parking Spot Hierarchy ---
+class ParkingSpot {
+    int id;
+    bool free;
+    SpotType type;
+    Vehicle* vehicle;
+public:
+    ParkingSpot(int id, SpotType t) : id(id), free(true), type(t), vehicle(nullptr) {}
+    
+    bool isFree() { return free; }
+    SpotType getType() { return type; }
+    
+    virtual bool canFit(Vehicle* v) {
+        if (type == LARGE_SPOT) return true; // Large fits all
+        if (type == COMPACT_SPOT) return v->getType() == CAR || v->getType() == MOTORCYCLE;
+        if (type == MOTORCYCLE_SPOT) return v->getType() == MOTORCYCLE;
+        return false;
+    }
 
     void park(Vehicle* v) {
         vehicle = v;
-        isFree = false;
+        free = false;
     }
 
     void removeVehicle() {
         vehicle = nullptr;
-        isFree = true;
+        free = true;
     }
+    
+    int getId() { return id; }
 };
 
-class ParkingLot {
+// --- Ticket ---
+class Ticket {
+    long entryTime;
+    string vehiclePlate;
+    int spotId;
+public:
+    Ticket(string plate, int spot) : vehiclePlate(plate), spotId(spot) {
+        entryTime = time(0);
+    }
+    long getEntryTime() { return entryTime; }
+    int getSpotId() { return spotId; }
+};
+
+// --- Parking Floor ---
+class ParkingFloor {
+    int floorId;
     vector<ParkingSpot*> spots;
 public:
-    ParkingLot() {
-        // Initialize spots
-        spots.push_back(new ParkingSpot(1, CAR));
-        spots.push_back(new ParkingSpot(2, BIKE));
-    }
-
-    bool parkVehicle(Vehicle* v) {
+    ParkingFloor(int id) : floorId(id) {}
+    
+    void addSpot(ParkingSpot* spot) { spots.push_back(spot); }
+    
+    ParkingSpot* findSpot(Vehicle* v) {
         for (auto spot : spots) {
-            if (spot->isFree && spot->type == v->type) {
-                spot->park(v);
-                cout << "Parked vehicle " << v->licensePlate << " at spot " << spot->id << endl;
-                return true;
+            if (spot->isFree() && spot->canFit(v)) {
+                return spot;
             }
         }
-        cout << "Parking full for type " << v->type << endl;
-        return false;
+        return nullptr;
     }
 };
+
+// --- Parking Lot (Singleton) ---
+class ParkingLot {
+    static ParkingLot* instance;
+    vector<ParkingFloor*> floors;
+    ParkingLot() {}
+public:
+    static ParkingLot* getInstance() {
+        if (instance == nullptr) instance = new ParkingLot();
+        return instance;
+    }
+    
+    void addFloor(ParkingFloor* floor) { floors.push_back(floor); }
+    
+    Ticket* parkVehicle(Vehicle* v) {
+        for (auto floor : floors) {
+            ParkingSpot* spot = floor->findSpot(v);
+            if (spot) {
+                spot->park(v);
+                return new Ticket(v->getLicensePlate(), spot->getId());
+            }
+        }
+        cout << "Parking Full!" << endl;
+        return nullptr;
+    }
+    
+    double calculateFee(Ticket* ticket) {
+        long duration = time(0) - ticket->getEntryTime();
+        // Simple logic: $1 per second for demo
+        return duration * 1.0; 
+    }
+};
+ParkingLot* ParkingLot::instance = nullptr;
 ```
 
-## 4. Snake and Ladder
-**Problem:** Design a Snake and Ladder game.
+---
 
+## 2. Design Snake and Ladder Game
+**Requirements:**
+*   Board size N*N.
+*   Multiple players.
+*   Dice roll (1-6).
+*   Snakes (Start > End) and Ladders (Start < End).
+*   Game ends when a player reaches 100.
+
+**Core Entities:**
+*   `Board`: Contains cells, snakes, ladders.
+*   `Player`: Name, current position.
+*   `Dice`: Random number generator.
+*   `Game`: Controls flow.
+
+**Code:**
 ```cpp
+#include <iostream>
 #include <map>
 #include <queue>
+#include <cstdlib>
+
+using namespace std;
+
+class Dice {
+public:
+    static int roll() { return (rand() % 6) + 1; }
+};
 
 class Board {
     int size;
@@ -1546,83 +1573,700 @@ class Board {
     map<int, int> ladders;
 public:
     Board(int s) : size(s) {}
-    void addSnake(int start, int end) { snakes[start] = end; }
-    void addLadder(int start, int end) { ladders[start] = end; }
+    
+    void addSnake(int start, int end) { 
+        if (start > end) snakes[start] = end; 
+    }
+    
+    void addLadder(int start, int end) { 
+        if (end > start) ladders[start] = end; 
+    }
     
     int getNewPosition(int pos) {
-        if (snakes.count(pos)) return snakes[pos];
-        if (ladders.count(pos)) return ladders[pos];
+        if (pos > size) return pos; // Can't move beyond end
+        
+        // Check for snake or ladder (recursively or iteratively)
+        // Simple version: just one jump
+        if (snakes.count(pos)) {
+            cout << "Bit by Snake! Down to " << snakes[pos] << endl;
+            return snakes[pos];
+        }
+        if (ladders.count(pos)) {
+            cout << "Climbed Ladder! Up to " << ladders[pos] << endl;
+            return ladders[pos];
+        }
         return pos;
     }
+    
     int getSize() { return size; }
 };
 
-class Game {
-    Board* board;
-    queue<string> players;
-    map<string, int> playerPositions;
+class Player {
+    string name;
+    int position;
 public:
-    Game(Board* b) : board(b) {}
-    void addPlayer(string name) {
-        players.push(name);
-        playerPositions[name] = 0;
-    }
+    Player(string n) : name(n), position(0) {}
+    string getName() { return name; }
+    int getPosition() { return position; }
+    void setPosition(int p) { position = p; }
+};
 
+class SnakeLadderGame {
+    Board* board;
+    queue<Player*> players;
+    bool isGameOver;
+public:
+    SnakeLadderGame(Board* b) : board(b), isGameOver(false) {}
+    
+    void addPlayer(Player* p) { players.push(p); }
+    
     void play() {
-        while (true) {
-            string player = players.front();
+        while (!isGameOver) {
+            Player* currentPlayer = players.front();
             players.pop();
             
-            int dice = (rand() % 6) + 1;
-            int currentPos = playerPositions[player];
-            int nextPos = currentPos + dice;
+            int roll = Dice::roll();
+            int oldPos = currentPlayer->getPosition();
+            int newPos = oldPos + roll;
             
-            if (nextPos > board->getSize()) {
-                players.push(player);
-                continue;
+            if (newPos > board->getSize()) {
+                newPos = oldPos; // Stay put if roll exceeds board
+            } else {
+                newPos = board->getNewPosition(newPos);
             }
             
-            nextPos = board->getNewPosition(nextPos);
-            playerPositions[player] = nextPos;
+            currentPlayer->setPosition(newPos);
             
-            cout << player << " rolled " << dice << " -> " << nextPos << endl;
+            cout << currentPlayer->getName() << " rolled " << roll 
+                 << " | " << oldPos << " -> " << newPos << endl;
             
-            if (nextPos == board->getSize()) {
-                cout << player << " WINS!" << endl;
-                break;
+            if (newPos == board->getSize()) {
+                cout << "WINNER: " << currentPlayer->getName() << endl;
+                isGameOver = true;
+            } else {
+                players.push(currentPlayer); // Add back to queue
             }
-            players.push(player);
         }
     }
 };
 ```
 
-## 5. Google Docs (Collaborative Editor) - High Level
-**Key Concepts:**
-*   **Operational Transformation (OT)** or **CRDT (Conflict-free Replicated Data Types)**: To handle concurrent edits.
-*   **WebSocket**: For real-time communication.
+---
 
-**Basic Class Structure:**
+## 3. Design a Rate Limiter
+**Requirements:**
+*   Limit requests based on User ID / IP.
+*   Strategy: Token Bucket (most common).
+*   Thread-safe.
+
+**Core Entities:**
+*   `TokenBucket`: Logic for refilling and consuming.
+*   `RateLimiter`: Manages buckets for different users.
+
+**Code:**
 ```cpp
-class Document {
-    string content;
-    vector<User*> activeUsers;
+#include <iostream>
+#include <unordered_map>
+#include <chrono>
+#include <mutex>
+
+using namespace std;
+
+class TokenBucket {
+    long maxCapacity;
+    long currentTokens;
+    long refillRate; // Tokens per second
+    long lastRefillTime;
+    mutex mtx;
+
 public:
-    void applyOperation(Operation op) {
-        // Apply insert/delete at position
-        // Transform operation if needed (OT logic)
+    TokenBucket(long capacity, long rate) 
+        : maxCapacity(capacity), currentTokens(capacity), refillRate(rate) {
+        lastRefillTime = std::chrono::system_clock::now().time_since_epoch().count();
+    }
+
+    bool allowRequest(int tokens) {
+        lock_guard<mutex> lock(mtx);
+        refill();
+        if (currentTokens >= tokens) {
+            currentTokens -= tokens;
+            return true;
+        }
+        return false;
+    }
+
+private:
+    void refill() {
+        long now = std::chrono::system_clock::now().time_since_epoch().count();
+        long durationSeconds = (now - lastRefillTime) / 1000000000; // Nanoseconds to seconds
+        
+        if (durationSeconds > 0) {
+            long tokensToAdd = durationSeconds * refillRate;
+            currentTokens = min(maxCapacity, currentTokens + tokensToAdd);
+            lastRefillTime = now;
+        }
     }
 };
 
-class Operation {
+class RateLimiter {
+    unordered_map<string, TokenBucket*> userBuckets;
 public:
-    enum Type { INSERT, DELETE };
-    Type type;
-    int position;
-    char character;
+    bool allow(string userId) {
+        if (userBuckets.find(userId) == userBuckets.end()) {
+            // Default: 10 tokens capacity, 1 token/sec refill
+            userBuckets[userId] = new TokenBucket(10, 1); 
+        }
+        return userBuckets[userId]->allowRequest(1);
+    }
 };
 ```
-*Note: Implementing full OT/CRDT is complex and usually beyond a 45-min interview scope, but knowing the classes and `applyOperation` logic is key.*
+
+---
+
+## 4. Design Splitwise (Expense Sharing App)
+**Requirements:**
+*   Users can add expenses.
+*   Split types: Equal, Exact, Percent.
+*   Show balance sheet (Who owes whom).
+*   Simplify debt (Optional advanced feature).
+
+**Core Entities:**
+*   `User`: Id, Name.
+*   `Expense`: Amount, PaidBy, Splits.
+*   `Split`: User, Amount.
+*   `ExpenseManager`: Central controller.
+
+**Code:**
+```cpp
+#include <iostream>
+#include <vector>
+#include <map>
+#include <string>
+
+using namespace std;
+
+enum SplitType { EQUAL, EXACT, PERCENT };
+
+class User {
+    string id;
+    string name;
+public:
+    User(string id, string name) : id(id), name(name) {}
+    string getId() { return id; }
+};
+
+class Split {
+    User* user;
+    double amount;
+public:
+    Split(User* u) : user(u) {}
+    User* getUser() { return user; }
+    double getAmount() { return amount; }
+    void setAmount(double a) { amount = a; }
+};
+
+class Expense {
+    string id;
+    double amount;
+    User* paidBy;
+    vector<Split*> splits;
+    SplitType type;
+public:
+    Expense(string id, double amount, User* paidBy, vector<Split*> splits, SplitType type)
+        : id(id), amount(amount), paidBy(paidBy), splits(splits), type(type) {}
+    
+    User* getPaidBy() { return paidBy; }
+    vector<Split*> getSplits() { return splits; }
+};
+
+class ExpenseManager {
+    vector<Expense*> expenses;
+    map<string, User*> userMap;
+    map<string, map<string, double>> balanceSheet; // User -> (OwesTo -> Amount)
+
+public:
+    void addUser(User* user) {
+        userMap[user->getId()] = user;
+        balanceSheet[user->getId()] = map<string, double>();
+    }
+
+    void addExpense(string id, double amount, string paidByUserId, vector<Split*> splits, SplitType type) {
+        User* paidBy = userMap[paidByUserId];
+        Expense* expense = new Expense(id, amount, paidBy, splits, type);
+        expenses.push_back(expense);
+
+        for (auto split : splits) {
+            string paidTo = split->getUser()->getId();
+            
+            // Logic: paidBy lends to paidTo
+            // balanceSheet[paidBy][paidTo] += amount;
+            // balanceSheet[paidTo][paidBy] -= amount;
+            
+            if (paidTo != paidByUserId) {
+                balanceSheet[paidByUserId][paidTo] += split->getAmount();
+                balanceSheet[paidTo][paidByUserId] -= split->getAmount();
+            }
+        }
+    }
+
+    void showBalance(string userId) {
+        bool isEmpty = true;
+        for (auto& entry : balanceSheet[userId]) {
+            if (entry.second != 0) {
+                isEmpty = false;
+                if (entry.second > 0) 
+                    cout << userId << " owes " << entry.first << ": " << abs(entry.second) << endl;
+                else 
+                    cout << entry.first << " owes " << userId << ": " << abs(entry.second) << endl;
+            }
+        }
+        if (isEmpty) cout << "No balances for " << userId << endl;
+    }
+};
+```
+
+---
+
+## 5. Design BookMyShow (Movie Ticket Booking)
+**Requirements:**
+*   List Cities > Cinemas > Movies > Shows.
+*   Select Seats.
+*   **Concurrency:** Handle multiple users trying to book the same seat.
+
+**Core Entities:**
+*   `Cinema`, `Screen`, `Seat`.
+*   `Show`: Movie at a specific time.
+*   `Booking`: User, Show, Seats.
+*   `SeatLock`: Mechanism to temporarily hold seats.
+
+**Code:**
+```cpp
+#include <iostream>
+#include <vector>
+#include <map>
+#include <mutex>
+
+using namespace std;
+
+enum SeatStatus { AVAILABLE, LOCKED, BOOKED };
+
+class Seat {
+    int id;
+    SeatStatus status;
+public:
+    Seat(int id) : id(id), status(AVAILABLE) {}
+    bool isAvailable() { return status == AVAILABLE; }
+    void setStatus(SeatStatus s) { status = s; }
+    int getId() { return id; }
+};
+
+class Show {
+    int id;
+    vector<Seat*> seats;
+public:
+    Show(int id, int seatCount) : id(id) {
+        for (int i = 0; i < seatCount; ++i) seats.push_back(new Seat(i));
+    }
+    
+    Seat* getSeat(int seatId) {
+        if (seatId < seats.size()) return seats[seatId];
+        return nullptr;
+    }
+};
+
+class BookingSystem {
+    map<int, Show*> shows; // ShowID -> Show
+    mutex mtx; // Global lock for simplicity (In real life, distributed lock)
+
+public:
+    void addShow(Show* show) { shows[1] = show; } // Demo ID 1
+
+    bool bookTicket(User* user, int showId, vector<int> seatIds) {
+        lock_guard<mutex> lock(mtx); // Critical Section Start
+        
+        Show* show = shows[showId];
+        // 1. Check availability
+        for (int id : seatIds) {
+            Seat* seat = show->getSeat(id);
+            if (!seat || !seat->isAvailable()) {
+                cout << "Seat " << id << " not available!" << endl;
+                return false;
+            }
+        }
+        
+        // 2. Lock/Book seats
+        for (int id : seatIds) {
+            show->getSeat(id)->setStatus(BOOKED);
+        }
+        
+        cout << "Booking Successful for " << user->getId() << endl;
+        return true; 
+        // Critical Section End
+    }
+};
+```
+
+---
+
+## 6. Design Stack Overflow
+**Requirements:**
+*   Users can Post Questions.
+*   Users can Answer Questions.
+*   Users can Comment on both.
+*   Voting (Up/Down) on Questions and Answers.
+*   Search (by tag/keyword).
+
+**Core Entities:**
+*   `Question`, `Answer`, `Comment` (All implement `Post` interface?).
+*   `User`, `Tag`.
+*   `Vote`.
+
+**Code:**
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+
+using namespace std;
+
+class User {
+    string name;
+    int reputation;
+public:
+    User(string n) : name(n), reputation(0) {}
+    void updateReputation(int score) { reputation += score; }
+};
+
+class Comment {
+    string text;
+    User* author;
+public:
+    Comment(string t, User* u) : text(t), author(u) {}
+};
+
+class Votable {
+public:
+    virtual void upvote() = 0;
+    virtual void downvote() = 0;
+    virtual int getVoteCount() = 0;
+};
+
+class Answer : public Votable {
+    string text;
+    User* author;
+    int votes;
+    vector<Comment*> comments;
+public:
+    Answer(string t, User* u) : text(t), author(u), votes(0) {}
+    void upvote() override { votes++; author->updateReputation(10); }
+    void downvote() override { votes--; author->updateReputation(-1); }
+    int getVoteCount() override { return votes; }
+    void addComment(Comment* c) { comments.push_back(c); }
+};
+
+class Question : public Votable {
+    string title;
+    string body;
+    User* author;
+    vector<Answer*> answers;
+    vector<Comment*> comments;
+    vector<string> tags;
+    int votes;
+public:
+    Question(string t, string b, User* u) : title(t), body(b), author(u), votes(0) {}
+    
+    void addAnswer(Answer* a) { answers.push_back(a); }
+    void addTag(string tag) { tags.push_back(tag); }
+    
+    void upvote() override { votes++; author->updateReputation(5); }
+    void downvote() override { votes--; author->updateReputation(-1); }
+    int getVoteCount() override { return votes; }
+    
+    bool hasTag(string tag) {
+        return find(tags.begin(), tags.end(), tag) != tags.end();
+    }
+    
+    string getTitle() { return title; }
+};
+
+class StackOverflow {
+    vector<Question*> questions;
+public:
+    void postQuestion(Question* q) { questions.push_back(q); }
+    
+    vector<Question*> searchByTag(string tag) {
+        vector<Question*> result;
+        for (auto q : questions) {
+            if (q->hasTag(tag)) result.push_back(q);
+        }
+        return result;
+    }
+};
+```
+
+---
+
+## 7. Design ATM System
+**Requirements:**
+*   Authenticate User (Card + PIN).
+*   Balance Inquiry, Withdraw Cash, Deposit.
+*   Hardware interaction (Card Reader, Cash Dispenser).
+
+**Core Entities:**
+*   `ATM`: Facade for hardware.
+*   `BankService`: Connects to bank.
+*   `ATMState`: State pattern (Idle, HasCard, Authenticated).
+
+**Code:**
+```cpp
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+// Mock Bank Service
+class BankService {
+public:
+    bool authenticate(string card, int pin) { return true; } // Mock
+    double getBalance(string card) { return 1000.0; }
+    bool withdraw(string card, double amount) { return true; }
+};
+
+// State Interface
+class ATMState {
+public:
+    virtual void insertCard() = 0;
+    virtual void enterPin(int pin) = 0;
+    virtual void withdraw(double amount) = 0;
+    virtual void ejectCard() = 0;
+};
+
+class ATM {
+    ATMState* currentState;
+    BankService bankService;
+    string currentCard;
+public:
+    ATM(); // Defined below
+    void setState(ATMState* state) { currentState = state; }
+    BankService& getBankService() { return bankService; }
+    void setCard(string card) { currentCard = card; }
+    string getCard() { return currentCard; }
+    
+    // Actions delegated to state
+    void insertCard();
+    void enterPin(int pin);
+    void withdraw(double amount);
+    void ejectCard();
+};
+
+class IdleState : public ATMState {
+    ATM* atm;
+public:
+    IdleState(ATM* a) : atm(a) {}
+    void insertCard() override {
+        cout << "Card Inserted" << endl;
+        // Transition to HasCardState (omitted for brevity)
+    }
+    void enterPin(int pin) override { cout << "Insert Card First" << endl; }
+    void withdraw(double amount) override { cout << "Insert Card First" << endl; }
+    void ejectCard() override { cout << "No Card" << endl; }
+};
+
+// ... Other states (HasCardState, AuthenticatedState) would follow similar pattern.
+```
+
+---
+
+## 8. Design Vending Machine
+**Requirements:**
+*   Select Item.
+*   Insert Money (Coins/Notes).
+*   Dispense Item + Change.
+*   State Pattern (Idle, Selection, MoneyInserted, Dispensing).
+
+**Core Entities:**
+*   `VendingMachine`: Context.
+*   `State`: Abstract State.
+*   `Inventory`: Manages products.
+
+**Code:**
+```cpp
+#include <iostream>
+#include <map>
+
+using namespace std;
+
+class VendingMachine;
+
+class State {
+protected:
+    VendingMachine* machine;
+public:
+    State(VendingMachine* m) : machine(m) {}
+    virtual void selectProduct(string code) = 0;
+    virtual void insertMoney(double amount) = 0;
+    virtual void dispense() = 0;
+};
+
+class VendingMachine {
+    State* idleState;
+    State* readyState;
+    State* currentState;
+    double currentBalance;
+public:
+    VendingMachine() {
+        // Initialize states...
+        currentBalance = 0;
+    }
+    void setState(State* s) { currentState = s; }
+    void addBalance(double amount) { currentBalance += amount; }
+    
+    void selectProduct(string code) { currentState->selectProduct(code); }
+    void insertMoney(double amount) { currentState->insertMoney(amount); }
+};
+
+class IdleState : public State {
+public:
+    IdleState(VendingMachine* m) : State(m) {}
+    void selectProduct(string code) override {
+        cout << "Product " << code << " selected." << endl;
+        // Transition to ReadyState
+    }
+    void insertMoney(double amount) override { cout << "Select product first" << endl; }
+    void dispense() override { cout << "Select product first" << endl; }
+};
+```
+
+---
+
+## 9. Design Elevator System
+**Requirements:**
+*   N Elevators, M Floors.
+*   Optimized scheduling (Minimize wait time).
+*   Handle internal (inside elevator) and external (hallway) requests.
+
+**Core Entities:**
+*   `Elevator`: Position, Direction, State (Moving, Idle).
+*   `Dispatcher`: Algorithm to assign elevator.
+*   `Request`: Floor, Direction.
+
+**Code:**
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+enum Direction { UP, DOWN, IDLE };
+
+class Request {
+    int floor;
+    Direction direction;
+public:
+    Request(int f, Direction d) : floor(f), direction(d) {}
+    int getFloor() { return floor; }
+};
+
+class Elevator {
+    int id;
+    int currentFloor;
+    Direction direction;
+    vector<int> stops; // Sorted list of stops
+public:
+    Elevator(int id) : id(id), currentFloor(0), direction(IDLE) {}
+    
+    void addStop(int floor) {
+        stops.push_back(floor);
+        sort(stops.begin(), stops.end()); // Simple logic: sort stops
+        if (direction == IDLE) {
+            direction = (floor > currentFloor) ? UP : DOWN;
+        }
+    }
+    
+    void move() {
+        if (stops.empty()) {
+            direction = IDLE;
+            return;
+        }
+        
+        int nextStop = stops[0]; // Simplification
+        cout << "Elevator " << id << " moving from " << currentFloor << " to " << nextStop << endl;
+        currentFloor = nextStop;
+        stops.erase(stops.begin());
+    }
+};
+
+class ElevatorSystem {
+    vector<Elevator*> elevators;
+public:
+    ElevatorSystem(int n) {
+        for (int i = 0; i < n; ++i) elevators.push_back(new Elevator(i));
+    }
+    
+    void requestElevator(int floor, Direction d) {
+        // Simple Dispatch: Round Robin or Nearest
+        // For demo, assign to first elevator
+        elevators[0]->addStop(floor);
+    }
+};
+```
+
+---
+
+## 10. Design Tic-Tac-Toe (Scalable)
+**Requirements:**
+*   N*N Board.
+*   2 Players.
+*   Check Win in O(1) or O(N).
+
+**Core Entities:**
+*   `TicTacToe`: Game logic.
+*   `Player`.
+
+**Code:**
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+class TicTacToe {
+    int n;
+    vector<vector<int>> board;
+    vector<int> rowSum, colSum;
+    int diagSum, antiDiagSum;
+    
+public:
+    TicTacToe(int n) : n(n), board(n, vector<int>(n, 0)), 
+                       rowSum(n, 0), colSum(n, 0), diagSum(0), antiDiagSum(0) {}
+    
+    // Player 1 adds +1, Player 2 adds -1
+    // Return: 0: No Winner, 1: Player 1 Wins, 2: Player 2 Wins
+    int move(int row, int col, int player) {
+        int val = (player == 1) ? 1 : -1;
+        
+        board[row][col] = val;
+        
+        rowSum[row] += val;
+        colSum[col] += val;
+        if (row == col) diagSum += val;
+        if (row + col == n - 1) antiDiagSum += val;
+        
+        if (abs(rowSum[row]) == n || abs(colSum[col]) == n || 
+            abs(diagSum) == n || abs(antiDiagSum) == n) {
+            return player;
+        }
+        
+        return 0;
+    }
+};
+```
+
+
+
 
 
 
