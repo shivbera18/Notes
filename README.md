@@ -1,8 +1,8 @@
-# 📚 Learning Notes Repository
+# Learning Notes Repository
 
 Welcome to my comprehensive learning notes repository! This collection contains detailed mastery guides covering various aspects of software development, from system design to backend and frontend technologies.
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```
 Notes/
@@ -17,9 +17,9 @@ Notes/
 
 ---
 
-## 🗺️ Quick Navigation
+## Quick Navigation
 
-### 🏗️ System Design
+### System Design
 
 <table>
 <tr>
@@ -35,7 +35,7 @@ Notes/
 - Machine Coding Best Practices
 - Real-world System Design Problems
 
-[📖 Read Guide →](./System-Design/LLD/LLD_Machine_Coding_Mastery_Guide.md)
+[Read Guide →](./System-Design/LLD/LLD_Machine_Coding_Mastery_Guide.md)
 
 </td>
 <td width="50%">
@@ -49,7 +49,7 @@ Notes/
 - API Design Patterns
 - Performance Optimization
 
-[📁 View Folder →](./System-Design/Web-Development/)
+[View Folder →](./System-Design/Web-Development/)
 
 </td>
 </tr>
@@ -57,7 +57,7 @@ Notes/
 
 ---
 
-### 💻 Backend Development
+### Backend Development
 
 <table>
 <tr>
@@ -73,7 +73,7 @@ Notes/
 - Error Handling & Validation
 - Testing & Deployment
 
-[📖 Read Guide →](./Backend/ExpressJS_Mastery_Guide.md)
+[Read Guide →](./Backend/ExpressJS_Mastery_Guide.md)
 
 </td>
 </tr>
@@ -81,7 +81,7 @@ Notes/
 
 ---
 
-### 🎨 Frontend Development
+### Frontend Development
 
 <table>
 <tr>
@@ -97,7 +97,7 @@ Notes/
 - Performance Optimization
 - Testing & Best Practices
 
-[📖 Read Guide →](./Frontend/React_Mastery_Guide.md)
+[Read Guide →](./Frontend/React_Mastery_Guide.md)
 
 </td>
 </tr>
@@ -105,7 +105,7 @@ Notes/
 
 ---
 
-### 🗄️ Databases
+### Databases
 
 <table>
 <tr>
@@ -121,7 +121,7 @@ Notes/
 - Database Design
 - Optimization Techniques
 
-[📖 Read Guide →](./Databases/PostgreSQL_Mastery_Guide.md)
+[Read Guide →](./Databases/PostgreSQL_Mastery_Guide.md)
 
 </td>
 <td width="50%">
@@ -136,7 +136,7 @@ Notes/
 - Performance & Optimization
 - Best Practices
 
-[📖 Read Guide →](./Databases/Prisma_Mastery_Guide.md)
+[Read Guide →](./Databases/Prisma_Mastery_Guide.md)
 
 </td>
 </tr>
@@ -144,7 +144,7 @@ Notes/
 
 ---
 
-### 🧮 Data Structures & Algorithms
+### Data Structures & Algorithms
 
 <table>
 <tr>
@@ -159,7 +159,7 @@ Notes/
 - Sorting & Searching Algorithms
 - Problem-Solving Patterns
 
-[📁 View Folder →](./DSA/)
+[View Folder →](./DSA/)
 
 </td>
 </tr>
@@ -167,20 +167,20 @@ Notes/
 
 ---
 
-## 📋 All Guides at a Glance
+## All Guides at a Glance
 
 | Category | Guide | Status | Link |
 |----------|-------|--------|------|
-| 🏗️ System Design | LLD Machine Coding Mastery | ✅ Complete | [View](./System-Design/LLD/LLD_Machine_Coding_Mastery_Guide.md) |
-| 💻 Backend | Express.js Mastery Guide | ✅ Complete | [View](./Backend/ExpressJS_Mastery_Guide.md) |
-| 🎨 Frontend | React.js Mastery Guide | ✅ Complete | [View](./Frontend/React_Mastery_Guide.md) |
-| 🗄️ Database | PostgreSQL Mastery Guide | ✅ Complete | [View](./Databases/PostgreSQL_Mastery_Guide.md) |
-| 🗄️ Database | Prisma Mastery Guide | ✅ Complete | [View](./Databases/Prisma_Mastery_Guide.md) |
-| 🧮 DSA | Data Structures & Algorithms | 🚧 Coming Soon | [View](./DSA/) |
+| System Design | LLD Machine Coding Mastery | Complete | [View](./System-Design/LLD/LLD_Machine_Coding_Mastery_Guide.md) |
+| Backend | Express.js Mastery Guide | Complete | [View](./Backend/ExpressJS_Mastery_Guide.md) |
+| Frontend | React.js Mastery Guide | Complete | [View](./Frontend/React_Mastery_Guide.md) |
+| Database | PostgreSQL Mastery Guide | Complete | [View](./Databases/PostgreSQL_Mastery_Guide.md) |
+| Database | Prisma Mastery Guide | Complete | [View](./Databases/Prisma_Mastery_Guide.md) |
+| DSA | Data Structures & Algorithms | Coming Soon | [View](./DSA/) |
 
 ---
 
-## 🎯 How to Use This Repository
+## How to Use This Repository
 
 1. **Browse by Category**: Use the folder structure to navigate to specific topics
 2. **Quick Access**: Click on any badge or link above to jump directly to a guide
@@ -189,19 +189,19 @@ Notes/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 Choose a topic that interests you and click on the corresponding guide link above. Each guide is comprehensive and includes:
 
-- 📖 Detailed explanations
-- 💡 Practical examples
-- 🔧 Code snippets
-- 🎯 Best practices
-- 📚 Additional resources
+- Detailed explanations
+- Practical examples
+- Code snippets
+- Best practices
+- Additional resources
 
 ---
 
-## 📝 Notes
+## Notes
 
 - All guides are written in Markdown format
 - Guides are continuously updated with new content
@@ -210,10 +210,10 @@ Choose a topic that interests you and click on the corresponding guide link abov
 
 ---
 
-## 📬 Contributing
+## Contributing
 
 This is a personal learning repository, but suggestions and corrections are always welcome!
 
 ---
 
-**Happy Learning! 🎓**
+**Happy Learning!**
