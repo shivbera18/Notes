@@ -12,6 +12,7 @@ A collection of comprehensive mastery guides covering software development topic
 
 ### Frontend
 - **[React.js Mastery Guide](./Frontend/React_Mastery_Guide.md)** - Hooks, state management, routing, and performance optimization
+- **[Next.js Mastery Guide](./Frontend/NextJS_Mastery_Guide.md)** - App Router, Server Components, data fetching, authentication, and deployment
 
 ### Databases
 - **[PostgreSQL Mastery Guide](./Databases/PostgreSQL_Mastery_Guide.md)** - SQL fundamentals, indexing, transactions, and optimization

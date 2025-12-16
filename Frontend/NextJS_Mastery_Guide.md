@@ -4244,4 +4244,1548 @@ export default function Form() {
 
 ---
 
-*This completes sections 11-21. The guide continues with Authentication, Database Integration, Performance, Testing, and Deployment sections. Would you like me to continue with the remaining sections (22-37)?*
+## 22. Authentication Patterns
+
+### NextAuth.js v5 (Auth.js)
+
+```bash
+npm install next-auth@beta
+```
+
+#### Basic Setup
+
+```jsx
+// auth.js
+import NextAuth from 'next-auth';
+import GitHub from 'next-auth/providers/github';
+import Google from 'next-auth/providers/google';
+import Credentials from 'next-auth/providers/credentials';
+
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  providers: [
+    GitHub({
+      clientId: process.env.GITHUB_ID,
+      clientSecret: process.env.GITHUB_SECRET,
+    }),
+    Google({
+      clientId: process.env.GOOGLE_ID,
+      clientSecret: process.env.GOOGLE_SECRET,
+    }),
+    Credentials({
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const user = await getUserFromDb(credentials.email, credentials.password);
+        if (user) {
+          return user;
+        }
+        return null;
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      session.user.id = token.id;
+      session.user.role = token.role;
+      return session;
+    },
+  },
+  pages: {
+    signIn: '/login',
+    error: '/auth/error',
+  },
+});
+```
+
+#### API Route Handler
+
+```jsx
+// app/api/auth/[...nextauth]/route.js
+import { handlers } from '@/auth';
+
+export const { GET, POST } = handlers;
+```
+
+#### Getting Session in Server Components
+
+```jsx
+// app/dashboard/page.js
+import { auth } from '@/auth';
+import { redirect } from 'next/navigation';
+
+export default async function Dashboard() {
+  const session = await auth();
+  
+  if (!session) {
+    redirect('/login');
+  }
+  
+  return <div>Welcome, {session.user.name}</div>;
+}
+```
+
+#### Getting Session in Client Components
+
+```jsx
+// app/components/UserButton.js
+'use client';
+
+import { useSession } from 'next-auth/react';
+
+export default function UserButton() {
+  const { data: session, status } = useSession();
+  
+  if (status === 'loading') return <div>Loading...</div>;
+  if (!session) return <a href="/login">Sign in</a>;
+  
+  return <div>Signed in as {session.user.email}</div>;
+}
+```
+
+#### Session Provider
+
+```jsx
+// app/components/Providers.js
+'use client';
+
+import { SessionProvider } from 'next-auth/react';
+
+export function Providers({ children }) {
+  return <SessionProvider>{children}</SessionProvider>;
+}
+```
+
+```jsx
+// app/layout.js
+import { Providers } from './components/Providers';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  );
+}
+```
+
+#### Sign In/Out
+
+```jsx
+// app/login/page.js
+import { signIn } from '@/auth';
+
+export default function LoginPage() {
+  return (
+    <div>
+      <form
+        action={async () => {
+          'use server';
+          await signIn('github');
+        }}
+      >
+        <button type="submit">Sign in with GitHub</button>
+      </form>
+      
+      <form
+        action={async () => {
+          'use server';
+          await signIn('google');
+        }}
+      >
+        <button type="submit">Sign in with Google</button>
+      </form>
+    </div>
+  );
+}
+```
+
+```jsx
+// app/components/SignOutButton.js
+import { signOut } from '@/auth';
+
+export default function SignOutButton() {
+  return (
+    <form
+      action={async () => {
+        'use server';
+        await signOut();
+      }}
+    >
+      <button type="submit">Sign out</button>
+    </form>
+  );
+}
+```
+
+---
+
+## 23. Authorization & Protected Routes
+
+### Middleware Protection
+
+```jsx
+// middleware.js
+import { auth } from './auth';
+import { NextResponse } from 'next/server';
+
+export default auth((req) => {
+  const isLoggedIn = !!req.auth;
+  const isOnDashboard = req.nextUrl.pathname.startsWith('/dashboard');
+  
+  if (isOnDashboard && !isLoggedIn) {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
+  
+  return NextResponse.next();
+});
+
+export const config = {
+  matcher: ['/dashboard/:path*', '/profile/:path*'],
+};
+```
+
+### Role-based Access Control
+
+```jsx
+// middleware.js
+export default auth((req) => {
+  const userRole = req.auth?.user?.role;
+  const isAdminRoute = req.nextUrl.pathname.startsWith('/admin');
+  
+  if (isAdminRoute && userRole !== 'admin') {
+    return NextResponse.redirect(new URL('/unauthorized', req.url));
+  }
+  
+  return NextResponse.next();
+});
+```
+
+### Server Component Protection
+
+```jsx
+// app/admin/page.js
+import { auth } from '@/auth';
+import { redirect } from 'next/navigation';
+
+export default async function AdminPage() {
+  const session = await auth();
+  
+  if (!session || session.user.role !== 'admin') {
+    redirect('/unauthorized');
+  }
+  
+  return <div>Admin Dashboard</div>;
+}
+```
+
+### Custom Hook for Authorization
+
+```jsx
+// app/hooks/useAuth.js
+'use client';
+
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
+export function useAuth(requiredRole) {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  
+  useEffect(() => {
+    if (status === 'loading') return;
+    
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+    
+    if (requiredRole && session.user.role !== requiredRole) {
+      router.push('/unauthorized');
+    }
+  }, [session, status, requiredRole, router]);
+  
+  return { session, status };
+}
+```
+
+---
+
+## 24. Security Best Practices
+
+### Content Security Policy
+
+```jsx
+// next.config.js
+const cspHeader = `
+  default-src 'self';
+  script-src 'self' 'unsafe-eval' 'unsafe-inline';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' blob: data:;
+  font-src 'self';
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self';
+  frame-ancestors 'none';
+  upgrade-insecure-requests;
+`;
+
+module.exports = {
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: cspHeader.replace(/\n/g, ''),
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+        ],
+      },
+    ];
+  },
+};
+```
+
+### Environment Variables
+
+```bash
+# .env.local (never commit!)
+DATABASE_URL="postgresql://..."
+NEXTAUTH_SECRET="your-secret-key"
+API_KEY="your-api-key"
+
+# .env (can commit - defaults)
+NEXT_PUBLIC_API_URL="https://api.example.com"
+```
+
+**Important:**
+- Never expose secrets to the client
+- Use `NEXT_PUBLIC_` prefix only for public variables
+- Rotate secrets regularly
+- Use different secrets for different environments
+
+### Input Validation
+
+```jsx
+// app/actions.js
+'use server';
+
+import { z } from 'zod';
+
+const CommentSchema = z.object({
+  content: z.string()
+    .min(1, 'Comment cannot be empty')
+    .max(500, 'Comment too long')
+    .regex(/^[a-zA-Z0-9\s.,!?'-]+$/, 'Invalid characters'),
+  postId: z.string().uuid(),
+});
+
+export async function createComment(formData) {
+  const validatedFields = CommentSchema.safeParse({
+    content: formData.get('content'),
+    postId: formData.get('postId'),
+  });
+  
+  if (!validatedFields.success) {
+    return { errors: validatedFields.error.flatten().fieldErrors };
+  }
+  
+  // Safe to use validated data
+  const { content, postId } = validatedFields.data;
+  
+  await db.comment.create({
+    data: { content, postId }
+  });
+}
+```
+
+### SQL Injection Prevention
+
+```jsx
+// ✅ Good - Using Prisma (parameterized queries)
+const user = await prisma.user.findUnique({
+  where: { email: userEmail }
+});
+
+// ❌ Bad - Raw SQL with string concatenation
+const user = await prisma.$queryRaw`
+  SELECT * FROM users WHERE email = ${userEmail}
+`; // Still safe with Prisma's tagged template
+
+// ❌ Very Bad - Never do this!
+const query = `SELECT * FROM users WHERE email = '${userEmail}'`;
+```
+
+### XSS Prevention
+
+```jsx
+// Next.js automatically escapes content in JSX
+<div>{userInput}</div> // Safe
+
+// Be careful with dangerouslySetInnerHTML
+<div dangerouslySetInnerHTML={{ __html: sanitize(userInput) }} />
+
+// Use a library like DOMPurify
+import DOMPurify from 'isomorphic-dompurify';
+
+const clean = DOMPurify.sanitize(dirty);
+```
+
+### CSRF Protection
+
+```jsx
+// Next.js Server Actions have built-in CSRF protection
+// No additional configuration needed
+
+// For API routes, use CSRF tokens
+import { getCsrfToken } from 'next-auth/react';
+
+const csrfToken = await getCsrfToken();
+```
+
+---
+
+## 25. Database Integration
+
+### Prisma Setup
+
+```bash
+npm install @prisma/client
+npm install -D prisma
+
+npx prisma init
+```
+
+#### Schema Definition
+
+```prisma
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  posts     Post[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([authorId])
+}
+```
+
+#### Prisma Client
+
+```jsx
+// lib/prisma.js
+import { PrismaClient } from '@prisma/client';
+
+const globalForPrisma = global;
+
+export const prisma = globalForPrisma.prisma || new PrismaClient();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma;
+}
+```
+
+#### Migrations
+
+```bash
+# Create migration
+npx prisma migrate dev --name init
+
+# Apply migrations in production
+npx prisma migrate deploy
+
+# Generate Prisma Client
+npx prisma generate
+```
+
+---
+
+## 26. Prisma with Next.js
+
+### CRUD Operations
+
+```jsx
+// app/actions.js
+'use server';
+
+import { prisma } from '@/lib/prisma';
+import { revalidatePath } from 'next/cache';
+
+export async function createPost(formData) {
+  const title = formData.get('title');
+  const content = formData.get('content');
+  const authorId = formData.get('authorId');
+  
+  await prisma.post.create({
+    data: {
+      title,
+      content,
+      authorId,
+    },
+  });
+  
+  revalidatePath('/posts');
+}
+
+export async function updatePost(id, formData) {
+  const title = formData.get('title');
+  const content = formData.get('content');
+  
+  await prisma.post.update({
+    where: { id },
+    data: { title, content },
+  });
+  
+  revalidatePath(`/posts/${id}`);
+}
+
+export async function deletePost(id) {
+  await prisma.post.delete({
+    where: { id },
+  });
+  
+  revalidatePath('/posts');
+}
+```
+
+### Fetching Data in Server Components
+
+```jsx
+// app/posts/page.js
+import { prisma } from '@/lib/prisma';
+
+export default async function PostsPage() {
+  const posts = await prisma.post.findMany({
+    include: {
+      author: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+  
+  return (
+    <div>
+      {posts.map(post => (
+        <article key={post.id}>
+          <h2>{post.title}</h2>
+          <p>By {post.author.name}</p>
+          <p>{post.content}</p>
+        </article>
+      ))}
+    </div>
+  );
+}
+```
+
+### Advanced Queries
+
+```jsx
+// Complex filtering
+const posts = await prisma.post.findMany({
+  where: {
+    AND: [
+      { published: true },
+      {
+        OR: [
+          { title: { contains: 'Next.js' } },
+          { content: { contains: 'Next.js' } },
+        ],
+      },
+    ],
+  },
+  include: {
+    author: true,
+  },
+  orderBy: [
+    { createdAt: 'desc' },
+    { title: 'asc' },
+  ],
+  take: 10,
+  skip: 0,
+});
+
+// Aggregations
+const stats = await prisma.post.aggregate({
+  _count: true,
+  _avg: {
+    views: true,
+  },
+  where: {
+    published: true,
+  },
+});
+
+// Transactions
+await prisma.$transaction([
+  prisma.user.create({ data: { email: 'user@example.com' } }),
+  prisma.post.create({ data: { title: 'Hello', authorId: userId } }),
+]);
+```
+
+---
+
+## 27. API Design Patterns
+
+### RESTful API Structure
+
+```
+app/api/
+├── users/
+│   ├── route.js           # GET /api/users, POST /api/users
+│   └── [id]/
+│       ├── route.js       # GET /api/users/:id, PATCH /api/users/:id
+│       └── posts/
+│           └── route.js   # GET /api/users/:id/posts
+└── posts/
+    ├── route.js           # GET /api/posts, POST /api/posts
+    └── [id]/
+        └── route.js       # GET /api/posts/:id, DELETE /api/posts/:id
+```
+
+### Pagination
+
+```jsx
+// app/api/posts/route.js
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '10');
+  const skip = (page - 1) * limit;
+  
+  const [posts, total] = await Promise.all([
+    prisma.post.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.post.count(),
+  ]);
+  
+  return Response.json({
+    data: posts,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  });
+}
+```
+
+### Error Handling
+
+```jsx
+// lib/errors.js
+export class ApiError extends Error {
+  constructor(message, statusCode) {
+    super(message);
+    this.statusCode = statusCode;
+  }
+}
+
+// app/api/posts/[id]/route.js
+import { ApiError } from '@/lib/errors';
+
+export async function GET(request, { params }) {
+  try {
+    const post = await prisma.post.findUnique({
+      where: { id: params.id },
+    });
+    
+    if (!post) {
+      throw new ApiError('Post not found', 404);
+    }
+    
+    return Response.json(post);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return Response.json(
+        { error: error.message },
+        { status: error.statusCode }
+      );
+    }
+    
+    return Response.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+---
+
+## 28. Performance Optimization
+
+### Image Optimization
+
+```jsx
+import Image from 'next/image';
+
+// Optimized images
+<Image
+  src="/hero.jpg"
+  alt="Hero"
+  width={1200}
+  height={600}
+  priority // Load immediately
+  quality={90}
+  placeholder="blur"
+  blurDataURL="data:image/..."
+/>
+```
+
+### Code Splitting
+
+```jsx
+// Dynamic imports
+import dynamic from 'next/dynamic';
+
+const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
+  loading: () => <p>Loading...</p>,
+  ssr: false, // Disable SSR for this component
+});
+```
+
+### Lazy Loading
+
+```jsx
+'use client';
+
+import { lazy, Suspense } from 'react';
+
+const Chart = lazy(() => import('./Chart'));
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<div>Loading chart...</div>}>
+      <Chart />
+    </Suspense>
+  );
+}
+```
+
+### Memoization
+
+```jsx
+'use client';
+
+import { useMemo, useCallback } from 'react';
+
+export default function ExpensiveComponent({ data }) {
+  const processedData = useMemo(() => {
+    return data.map(item => expensiveOperation(item));
+  }, [data]);
+  
+  const handleClick = useCallback(() => {
+    console.log('Clicked');
+  }, []);
+  
+  return <div onClick={handleClick}>{processedData}</div>;
+}
+```
+
+### React Server Components
+
+```jsx
+// Heavy computation on server
+async function HeavyComponent() {
+  const data = await heavyComputation();
+  return <div>{data}</div>;
+}
+
+// No JavaScript sent to client!
+export default function Page() {
+  return <HeavyComponent />;
+}
+```
+
+### Database Query Optimization
+
+```jsx
+// ❌ Bad - N+1 query problem
+const users = await prisma.user.findMany();
+for (const user of users) {
+  const posts = await prisma.post.findMany({
+    where: { authorId: user.id }
+  });
+}
+
+// ✅ Good - Single query with include
+const users = await prisma.user.findMany({
+  include: {
+    posts: true,
+  },
+});
+```
+
+### Caching Strategies
+
+```jsx
+// Static data (cached forever)
+export const revalidate = false;
+
+// Revalidate every 60 seconds
+export const revalidate = 60;
+
+// Dynamic (no cache)
+export const dynamic = 'force-dynamic';
+
+// On-demand revalidation
+import { revalidatePath } from 'next/cache';
+revalidatePath('/posts');
+```
+
+---
+
+## 29. Bundle Analysis & Code Splitting
+
+### Bundle Analyzer
+
+```bash
+npm install @next/bundle-analyzer
+```
+
+```javascript
+// next.config.js
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
+module.exports = withBundleAnalyzer({
+  // Your Next.js config
+});
+```
+
+```bash
+# Analyze bundle
+ANALYZE=true npm run build
+```
+
+### Route-based Code Splitting
+
+Next.js automatically code-splits by route.
+
+```
+app/
+├── page.js           # Bundle 1
+├── about/
+│   └── page.js       # Bundle 2
+└── dashboard/
+    └── page.js       # Bundle 3
+```
+
+### Component-based Code Splitting
+
+```jsx
+import dynamic from 'next/dynamic';
+
+const DynamicComponent = dynamic(() => import('./Component'), {
+  loading: () => <p>Loading...</p>,
+});
+```
+
+### Optimizing Third-party Libraries
+
+```jsx
+// Import only what you need
+import { debounce } from 'lodash-es';
+
+// Instead of
+import _ from 'lodash';
+```
+
+---
+
+## 30. Monitoring & Analytics
+
+### Vercel Analytics
+
+```bash
+npm install @vercel/analytics
+```
+
+```jsx
+// app/layout.js
+import { Analytics } from '@vercel/analytics/react';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <Analytics />
+      </body>
+    </html>
+  );
+}
+```
+
+### Google Analytics
+
+```jsx
+// app/components/GoogleAnalytics.js
+'use client';
+
+import Script from 'next/script';
+
+export default function GoogleAnalytics({ GA_MEASUREMENT_ID }) {
+  return (
+    <>
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+        strategy="afterInteractive"
+      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${GA_MEASUREMENT_ID}');
+        `}
+      </Script>
+    </>
+  );
+}
+```
+
+### Error Tracking (Sentry)
+
+```bash
+npm install @sentry/nextjs
+```
+
+```javascript
+// sentry.client.config.js
+import * as Sentry from '@sentry/nextjs';
+
+Sentry.init({
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  tracesSampleRate: 1.0,
+});
+```
+
+---
+
+## 31. Testing Strategies
+
+### Unit Testing with Vitest
+
+```bash
+npm install -D vitest @testing-library/react @testing-library/jest-dom
+```
+
+```javascript
+// vitest.config.js
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    environment: 'jsdom',
+  },
+});
+```
+
+```jsx
+// app/components/Button.test.js
+import { render, screen } from '@testing-library/react';
+import { expect, test } from 'vitest';
+import Button from './Button';
+
+test('renders button with text', () => {
+  render(<Button>Click me</Button>);
+  expect(screen.getByText('Click me')).toBeInTheDocument();
+});
+```
+
+### Integration Testing
+
+```jsx
+// app/components/Form.test.js
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { expect, test, vi } from 'vitest';
+import Form from './Form';
+
+test('submits form data', async () => {
+  const onSubmit = vi.fn();
+  render(<Form onSubmit={onSubmit} />);
+  
+  fireEvent.change(screen.getByLabelText('Name'), {
+    target: { value: 'John' },
+  });
+  
+  fireEvent.click(screen.getByText('Submit'));
+  
+  await waitFor(() => {
+    expect(onSubmit).toHaveBeenCalledWith({ name: 'John' });
+  });
+});
+```
+
+### E2E Testing with Playwright
+
+```bash
+npm install -D @playwright/test
+npx playwright install
+```
+
+```javascript
+// tests/e2e/login.spec.js
+import { test, expect } from '@playwright/test';
+
+test('user can login', async ({ page }) => {
+  await page.goto('http://localhost:3000/login');
+  
+  await page.fill('input[name="email"]', 'user@example.com');
+  await page.fill('input[name="password"]', 'password');
+  await page.click('button[type="submit"]');
+  
+  await expect(page).toHaveURL('http://localhost:3000/dashboard');
+  await expect(page.locator('h1')).toContainText('Dashboard');
+});
+```
+
+---
+
+## 32. Error Handling
+
+### Error Boundaries
+
+```jsx
+// app/error.js
+'use client';
+
+export default function Error({ error, reset }) {
+  return (
+    <div>
+      <h2>Something went wrong!</h2>
+      <p>{error.message}</p>
+      <button onClick={() => reset()}>Try again</button>
+    </div>
+  );
+}
+```
+
+### Global Error Handler
+
+```jsx
+// app/global-error.js
+'use client';
+
+export default function GlobalError({ error, reset }) {
+  return (
+    <html>
+      <body>
+        <h2>Application Error</h2>
+        <button onClick={() => reset()}>Try again</button>
+      </body>
+    </html>
+  );
+}
+```
+
+### API Error Handling
+
+```jsx
+// lib/api-error.js
+export class ApiError extends Error {
+  constructor(message, statusCode, code) {
+    super(message);
+    this.statusCode = statusCode;
+    this.code = code;
+  }
+}
+
+// app/api/posts/route.js
+export async function GET() {
+  try {
+    const posts = await getPosts();
+    return Response.json(posts);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return Response.json(
+        { error: error.message, code: error.code },
+        { status: error.statusCode }
+      );
+    }
+    
+    return Response.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+---
+
+## 33. TypeScript Best Practices
+
+### Type-safe Route Params
+
+```typescript
+// app/blog/[slug]/page.tsx
+interface PageProps {
+  params: { slug: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
+export default async function BlogPost({ params, searchParams }: PageProps) {
+  const post = await getPost(params.slug);
+  return <article>{post.title}</article>;
+}
+```
+
+### Type-safe Server Actions
+
+```typescript
+// app/actions.ts
+'use server';
+
+import { z } from 'zod';
+
+const FormSchema = z.object({
+  name: z.string().min(3),
+  email: z.string().email(),
+});
+
+type FormState = {
+  errors?: {
+    name?: string[];
+    email?: string[];
+  };
+  success?: boolean;
+};
+
+export async function createUser(
+  prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const validatedFields = FormSchema.safeParse({
+    name: formData.get('name'),
+    email: formData.get('email'),
+  });
+  
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+  
+  // Process data
+  return { success: true };
+}
+```
+
+### Type-safe API Routes
+
+```typescript
+// app/api/users/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export async function GET(request: NextRequest): Promise<NextResponse<User[]>> {
+  const users = await getUsers();
+  return NextResponse.json(users);
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse<User>> {
+  const body = await request.json();
+  const user = await createUser(body);
+  return NextResponse.json(user, { status: 201 });
+}
+```
+
+---
+
+## 34. Deployment Options
+
+### Vercel (Recommended)
+
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy
+vercel
+
+# Production deployment
+vercel --prod
+```
+
+**Features:**
+- Zero configuration
+- Automatic HTTPS
+- Global CDN
+- Serverless functions
+- Preview deployments
+- Analytics
+
+### Docker
+
+```dockerfile
+# Dockerfile
+FROM node:18-alpine AS base
+
+# Dependencies
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+
+# Builder
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build
+
+# Runner
+FROM base AS runner
+WORKDIR /app
+ENV NODE_ENV production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+EXPOSE 3000
+ENV PORT 3000
+
+CMD ["node", "server.js"]
+```
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/mydb
+    depends_on:
+      - db
+  
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+```
+
+### Self-hosted (Node.js)
+
+```bash
+# Build
+npm run build
+
+# Start
+npm start
+```
+
+```javascript
+// next.config.js
+module.exports = {
+  output: 'standalone',
+};
+```
+
+---
+
+## 35. Environment Variables
+
+### Local Development
+
+```bash
+# .env.local
+DATABASE_URL="postgresql://localhost:5432/dev"
+NEXTAUTH_SECRET="dev-secret"
+NEXTAUTH_URL="http://localhost:3000"
+```
+
+### Production
+
+```bash
+# .env.production
+DATABASE_URL="postgresql://prod-server:5432/prod"
+NEXTAUTH_SECRET="prod-secret"
+NEXTAUTH_URL="https://example.com"
+```
+
+### Accessing Environment Variables
+
+```jsx
+// Server-side only
+const dbUrl = process.env.DATABASE_URL;
+
+// Client-side (must be prefixed with NEXT_PUBLIC_)
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+```
+
+### Type-safe Environment Variables
+
+```typescript
+// env.ts
+import { z } from 'zod';
+
+const envSchema = z.object({
+  DATABASE_URL: z.string().url(),
+  NEXTAUTH_SECRET: z.string().min(32),
+  NEXTAUTH_URL: z.string().url(),
+  NEXT_PUBLIC_API_URL: z.string().url(),
+});
+
+export const env = envSchema.parse(process.env);
+```
+
+---
+
+## 36. CI/CD Pipelines
+
+### GitHub Actions
+
+```yaml
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run linter
+        run: npm run lint
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+```
+
+### Vercel Deployment
+
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.ORG_ID }}
+          vercel-project-id: ${{ secrets.PROJECT_ID }}
+          vercel-args: '--prod'
+```
+
+---
+
+## 37. Production Best Practices
+
+### Performance Checklist
+
+- ✅ Use Server Components by default
+- ✅ Implement proper caching strategies
+- ✅ Optimize images with next/image
+- ✅ Use font optimization with next/font
+- ✅ Implement code splitting
+- ✅ Enable compression
+- ✅ Use CDN for static assets
+- ✅ Minimize JavaScript bundle size
+- ✅ Implement lazy loading
+- ✅ Use React.memo for expensive components
+
+### Security Checklist
+
+- ✅ Set security headers (CSP, X-Frame-Options, etc.)
+- ✅ Validate all user inputs
+- ✅ Use environment variables for secrets
+- ✅ Implement rate limiting
+- ✅ Enable HTTPS
+- ✅ Use CSRF protection
+- ✅ Sanitize user-generated content
+- ✅ Keep dependencies updated
+- ✅ Implement proper authentication
+- ✅ Use secure cookies
+
+### SEO Checklist
+
+- ✅ Add metadata to all pages
+- ✅ Generate sitemap.xml
+- ✅ Create robots.txt
+- ✅ Implement structured data (JSON-LD)
+- ✅ Use semantic HTML
+- ✅ Optimize page load speed
+- ✅ Ensure mobile responsiveness
+- ✅ Add Open Graph tags
+- ✅ Implement canonical URLs
+- ✅ Use descriptive URLs
+
+### Monitoring Checklist
+
+- ✅ Set up error tracking (Sentry)
+- ✅ Implement analytics (Vercel Analytics, Google Analytics)
+- ✅ Monitor performance metrics
+- ✅ Set up uptime monitoring
+- ✅ Track Core Web Vitals
+- ✅ Monitor API response times
+- ✅ Set up logging
+- ✅ Track user behavior
+- ✅ Monitor database performance
+- ✅ Set up alerts for critical issues
+
+### Deployment Checklist
+
+- ✅ Test in staging environment
+- ✅ Run all tests
+- ✅ Check for TypeScript errors
+- ✅ Run linter
+- ✅ Optimize bundle size
+- ✅ Set up environment variables
+- ✅ Configure database migrations
+- ✅ Set up CI/CD pipeline
+- ✅ Implement rollback strategy
+- ✅ Document deployment process
+
+---
+
+## Conclusion
+
+This guide covered Next.js from fundamentals to production-ready applications. Key takeaways:
+
+1. **Server Components** are the future - use them by default
+2. **App Router** provides better DX and performance
+3. **Data fetching** is simplified with async Server Components
+4. **Caching** is automatic but configurable
+5. **Server Actions** eliminate the need for many API routes
+6. **TypeScript** provides type safety across your application
+7. **Performance** is built-in with automatic optimizations
+8. **Security** requires conscious effort and best practices
+9. **Testing** ensures reliability and confidence
+10. **Deployment** is seamless with Vercel or self-hosted options
+
+### Next Steps
+
+- Build a full-stack application using these concepts
+- Explore advanced patterns (Parallel Routes, Intercepting Routes)
+- Dive deeper into performance optimization
+- Learn about Edge Runtime and Middleware
+- Contribute to the Next.js community
+
+### Resources
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Next.js GitHub](https://github.com/vercel/next.js)
+- [Next.js Examples](https://github.com/vercel/next.js/tree/canary/examples)
+- [Vercel Blog](https://vercel.com/blog)
+- [React Documentation](https://react.dev)
+
+---
+
+**Happy coding with Next.js! 🚀**
