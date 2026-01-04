@@ -571,6 +571,93 @@ You can reuse this pattern for **any table**:
 
 ---
 
+### 4.5 Async vs Sync in FastAPI (Beginner-friendly)
+
+You’ll see two kinds of route functions in FastAPI:
+
+```python
+@app.get("/sync")
+def sync_route():
+    return {"type": "sync"}
+
+
+@app.get("/async")
+async def async_route():
+    return {"type": "async"}
+```
+
+Both **work**, but they are different:
+
+- `def` (sync): regular Python function. If it does slow/blocking work, the whole worker is blocked.
+- `async def`: asynchronous function. It can **await** other async operations and let FastAPI serve other requests while it waits.
+
+FastAPI can happily mix both, but:
+
+- Use **`async def`** for anything that might wait on IO (DB, HTTP calls, file system) *if* the library you use supports async.
+- It’s okay to keep **simple CPU-only work** as plain `def`.
+
+#### What does `await` mean?
+
+Inside an `async def` function you can write:
+
+```python
+import asyncio
+
+
+@app.get("/wait")
+async def wait_route():
+    # Pretend to do some work for 2 seconds
+    await asyncio.sleep(2)
+    return {"done": True}
+```
+
+`await asyncio.sleep(2)` means:
+
+- “Pause this route’s work for 2 seconds, **but do NOT block the whole server**.”
+- During those 2 seconds, FastAPI/Uvicorn can handle **other requests**.
+
+If you did this instead:
+
+```python
+import time
+
+
+@app.get("/bad-wait")
+async def bad_wait_route():
+    time.sleep(2)  # ❌ blocking inside async
+    return {"done": True}
+```
+
+`time.sleep(2)` blocks the entire worker process for 2 seconds, even though the function is `async def`. So:
+
+- Inside `async def`, always use **async functions** (`await something_async()`), not blocking ones.
+
+#### Async DB Example (Conceptual)
+
+For async DB libraries (e.g. SQLAlchemy 2 async, asyncpg, databases, SQLModel + async engine), you’ll often see:
+
+```python
+@app.get("/users")
+async def list_users(db: AsyncSession = Depends(get_async_db)):
+    result = await db.execute(select(User))  # await the DB call
+    users = result.scalars().all()
+    return users
+```
+
+Key points:
+
+- The route is `async def`.
+- The DB call is `await db.execute(...)`.
+- While the DB is working, FastAPI can process other requests.
+
+You don’t need to become an async expert immediately, but remember:
+
+> **If the library gives you an async function (e.g. `await client.get(...)`), your route must be `async def` and you must use `await`.**
+
+We’ll see a complete async DB pagination example later in the SQLModel section.
+
+---
+
 The important takeaway:
 
 - **You don’t manually read `request.query_params` inside every route.**
@@ -1155,7 +1242,9 @@ async def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
 
 ## 13. SQLModel & Async Databases
 
-*(Conceptually similar to SQLAlchemy, but more Pydantic-friendly and async-ready.)*
+*(Conceptually similar to SQLAlchemy, but more Pydantic-friendly and with good async support.)*
+
+### 13.1 Basic SQLModel Setup (Sync)
 
 ```python
 from sqlmodel import SQLModel, Field, create_engine, Session
@@ -1171,8 +1260,10 @@ class User(SQLModel, table=True):
 engine = create_engine("sqlite:///./sqlmodel.db", echo=True)
 
 
+
 def init_db():
     SQLModel.metadata.create_all(engine)
+
 
 
 def get_session():
@@ -1180,9 +1271,100 @@ def get_session():
         yield session
 ```
 
----
+### 13.2 Async SQLModel + Async Pagination Example
 
-## 14. Repository & Service Layer Patterns
+Now, let’s see how this looks with **async**. We’ll:
+
+- Use an **async engine**.
+- Define an `AsyncSession` dependency.
+- Reuse the same `PaginationParams` + `get_pagination`.
+
+```python
+# db/async_session.py
+from sqlmodel import SQLModel
+from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.orm import sessionmaker
+
+DATABASE_URL = "postgresql+asyncpg://user:password@localhost:5432/mydb"
+
+engine = create_async_engine(DATABASE_URL, echo=False, future=True)
+
+AsyncSessionLocal = sessionmaker(
+    engine, expire_on_commit=False, class_=AsyncSession
+)
+
+
+async def init_async_db() -> None:
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+
+
+async def get_async_session() -> AsyncSession:
+    async with AsyncSessionLocal() as session:
+        yield session
+```
+
+Assume we have an `Item` model compatible with SQLModel:
+
+```python
+# models/item_sqlmodel.py
+from sqlmodel import SQLModel, Field
+
+
+class Item(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
+```
+
+Async route with pagination:
+
+```python
+# api/v1/routes/items_async.py
+from typing import List
+
+from fastapi import APIRouter, Depends
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from app.db.async_session import get_async_session
+from app.api.v1.deps import PaginationParams, get_pagination
+from app.models.item_sqlmodel import Item
+
+router = APIRouter()
+
+
+@router.get("/", response_model=List[Item])
+async def list_items_async(
+    pagination: PaginationParams = Depends(get_pagination),
+    session: AsyncSession = Depends(get_async_session),
+):
+    # 1) Compute offset/limit from page + size
+    offset = (pagination.page - 1) * pagination.size
+    limit = pagination.size
+
+    # 2) Build a SELECT query
+    query = select(Item).order_by(Item.id).offset(offset).limit(limit)
+
+    # 3) Execute query asynchronously
+    result = await session.exec(query)
+
+    # 4) Extract list of Item objects
+    items = result.all()
+
+    return items
+```
+
+What’s new compared to the sync SQLAlchemy example:
+
+- The route is **`async def`**.
+- The DB session type is **`AsyncSession`**.
+- We `await session.exec(query)` because it’s an async call.
+- While the database is processing the query, FastAPI can serve other requests.
+
+This mirrors the earlier **sync** pagination logic, but now everything is async/await-aware.
+
+---
 
 Similar to the Express guide’s service/controller layering, we can:
 
