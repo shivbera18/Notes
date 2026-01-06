@@ -1,6 +1,30 @@
-# DSA Mastery Guide
+# 🐍 DSA Problems & Solutions: Comprehensive Python Guide
 
-## Python Guide for C++ Experts
+This comprehensive solutions guide covers Data Structures and Algorithms problems in Python, with detailed explanations, code implementations, and best practices. Perfect for competitive programming and interview preparation.
+
+## Index
+1. [Python for DSA (C++ Experts)](#1-python-for-dsa-c-experts)
+2. [Arrays](#2-arrays)
+   - 2.1 [Easy Problems](#21-easy-problems)
+   - 2.2 [Medium Problems](#22-medium-problems)
+   - 2.3 [Hard Problems](#23-hard-problems)
+3. [Binary Search](#3-binary-search)
+4. [Strings](#4-strings)
+5. [Linked Lists](#5-linked-lists)
+6. [Stacks & Queues](#6-stacks--queues)
+7. [Trees](#7-trees)
+8. [Graphs](#8-graphs)
+9. [Dynamic Programming](#9-dynamic-programming)
+10. [Greedy Algorithms](#10-greedy-algorithms)
+11. [Backtracking](#11-backtracking)
+12. [Bit Manipulation](#12-bit-manipulation)
+13. [Math Problems](#13-math-problems)
+14. [Two Pointers & Sliding Window](#14-two-pointers--sliding-window)
+15. [Advanced Topics](#15-advanced-topics)
+
+---
+
+## 1. Python for DSA (C++ Experts)
 
 This guide is tailored for programmers proficient in C++ (at a candidate master level) transitioning to Python for Data Structures and Algorithms (DSA). Python's simplicity and built-in features make it excellent for DSA, but there are key differences to note.
 
@@ -126,6 +150,435 @@ For competitive programming like Codeforces, efficient input reading is crucial 
    - For array: `n = int(input()); arr = list(map(int, input().split()))`
    - Use `sys.stdin.readline()` for line-by-line if needed, but `sys.stdin.read()` is faster.
 
+### For Loops and Iteration in Python vs C++
+
+Python's for loops are more powerful and readable than C++'s traditional for loops.
+
+1. **Range-based Loops**:
+   ```python
+   # Python: Iterate over range
+   for i in range(5):  # 0, 1, 2, 3, 4
+       print(i)
+   
+   # C++ equivalent: for(int i=0; i<5; i++) { cout << i << endl; }
+   ```
+
+2. **Iterating over Collections**:
+   ```python
+   # Python: Direct iteration
+   arr = [1, 2, 3, 4, 5]
+   for num in arr:
+       print(num)
+   
+   # C++ equivalent: for(int num : arr) { cout << num << endl; } (C++11 range-based)
+   # Or: for(auto it=arr.begin(); it!=arr.end(); ++it) { cout << *it << endl; }
+   ```
+
+3. **Index and Value (Enumerate)**:
+   ```python
+   # Python: Get both index and value
+   for i, num in enumerate(arr):
+       print(f"Index {i}: {num}")
+   
+   # C++ equivalent: for(size_t i=0; i<arr.size(); i++) { cout << "Index " << i << ": " << arr[i] << endl; }
+   ```
+
+4. **Reverse Iteration**:
+   ```python
+   # Python: Reverse
+   for num in reversed(arr):
+       print(num)
+   
+   # C++ equivalent: for(auto it=arr.rbegin(); it!=arr.rend(); ++it) { cout << *it << endl; }
+   ```
+
+5. **Step-based Iteration**:
+   ```python
+   # Python: Every other element
+   for num in arr[::2]:  # Start:End:Step
+       print(num)
+   
+   # C++ equivalent: for(size_t i=0; i<arr.size(); i+=2) { cout << arr[i] << endl; }
+   ```
+
+6. **Nested Loops**:
+   ```python
+   # Python: Matrix iteration
+   matrix = [[1, 2], [3, 4]]
+   for row in matrix:
+       for num in row:
+           print(num)
+   
+   # C++ equivalent: for(auto& row : matrix) { for(int num : row) { cout << num << endl; } }
+   ```
+
+7. **List Comprehensions (Advanced)**:
+   ```python
+   # Python: Create new list with conditions
+   squares = [x*x for x in range(10) if x % 2 == 0]
+   
+   # C++ equivalent: vector<int> squares; for(int x=0; x<10; x++) { if(x%2==0) squares.push_back(x*x); }
+   ```
+
+### Understanding "for x in iterable" Syntax
+
+Python's `for x in iterable` is fundamentally different from C++'s traditional `for(int i=0; i<n; i++)` loop:
+
+1. **Direct Iteration over Elements**:
+   ```python
+   # Python: Iterate over actual elements
+   fruits = ["apple", "banana", "cherry"]
+   for fruit in fruits:  # fruit gets each string directly
+       print(fruit)
+   
+   # C++ equivalent: for(string fruit : fruits) { cout << fruit << endl; } (C++11 range-based)
+   # Or: for(size_t i=0; i<fruits.size(); i++) { cout << fruits[i] << endl; }
+   ```
+
+2. **No Index Management**:
+   ```python
+   # Python: Focus on elements, not indices
+   numbers = [10, 20, 30]
+   for num in numbers:
+       print(num * 2)  # Direct access to values
+   
+   # C++ equivalent: for(int num : numbers) { cout << num * 2 << endl; }
+   ```
+
+3. **Works with Any Iterable**:
+   ```python
+   # Python: Works with strings, sets, dictionaries, etc.
+   word = "hello"
+   for char in word:  # Iterate over characters
+       print(char)
+   
+   my_set = {1, 2, 3}
+   for item in my_set:  # Iterate over set elements
+       print(item)
+   
+   # C++ equivalent: for(char ch : word) { cout << ch << endl; }
+   # For sets: for(int item : my_set) { cout << item << endl; }
+   ```
+
+4. **Automatic Unpacking**:
+   ```python
+   # Python: Unpack tuples/lists automatically
+   pairs = [(1, 'a'), (2, 'b'), (3, 'c')]
+   for number, letter in pairs:  # Unpacks each tuple
+       print(f"{number}: {letter}")
+   
+   # C++ equivalent: for(auto& pair : pairs) { cout << pair.first << ": " << pair.second << endl; }
+   ```
+
+### Matrix Operations and 2D Arrays
+
+Python handles 2D arrays (matrices) using lists of lists, which is more flexible than C++ arrays:
+
+1. **Creating Matrices**:
+   ```python
+   # Python: Different ways to create matrices
+   # Method 1: List of lists
+   matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+   
+   # Method 2: Using loops
+   rows, cols = 3, 4
+   matrix = [[0 for _ in range(cols)] for _ in range(rows)]
+   
+   # Method 3: Using list comprehension
+   matrix = [[i*cols + j for j in range(cols)] for i in range(rows)]
+   
+   # C++ equivalent:
+   # vector<vector<int>> matrix(rows, vector<int>(cols, 0));
+   # Or: int matrix[3][4] = {{1,2,3},{4,5,6},{7,8,9}};
+   ```
+
+2. **Accessing Matrix Elements**:
+   ```python
+   # Python: matrix[row][col]
+   value = matrix[1][2]  # Row 1, Column 2
+   matrix[0][0] = 99    # Modify element
+   
+   # C++ equivalent: matrix[1][2] or matrix.at(1).at(2)
+   ```
+
+3. **Iterating Over Matrices**:
+   ```python
+   # Python: Multiple ways
+   matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+   
+   # Method 1: Nested loops with indices
+   for i in range(len(matrix)):      # i = row index
+       for j in range(len(matrix[i])): # j = col index
+           print(f"matrix[{i}][{j}] = {matrix[i][j]}")
+   
+   # Method 2: Direct element iteration
+   for row in matrix:      # row is a list
+       for element in row: # element is the value
+           print(element)
+   
+   # Method 3: Enumerate for indices and values
+   for i, row in enumerate(matrix):
+       for j, val in enumerate(row):
+           print(f"Position ({i},{j}): {val}")
+   
+   # C++ equivalent:
+   # for(size_t i=0; i<matrix.size(); i++) {
+   #     for(size_t j=0; j<matrix[i].size(); j++) {
+   #         cout << "matrix[" << i << "][" << j << "] = " << matrix[i][j] << endl;
+   #     }
+   # }
+   ```
+
+4. **Matrix Operations**:
+   ```python
+   # Python: Common matrix operations
+   matrix = [[1, 2], [3, 4]]
+   
+   # Transpose
+   transpose = [[row[i] for row in matrix] for i in range(len(matrix[0]))]
+   # Or: transpose = list(map(list, zip(*matrix)))
+   
+   # Flatten (convert to 1D)
+   flat = [element for row in matrix for element in row]
+   
+   # Sum of all elements
+   total = sum(sum(row) for row in matrix)
+   
+   # Find max in each row
+   row_maxes = [max(row) for row in matrix]
+   
+   # Matrix addition
+   matrix2 = [[5, 6], [7, 8]]
+   result = [[matrix[i][j] + matrix2[i][j] for j in range(len(matrix[i]))] for i in range(len(matrix))]
+   
+   # C++ equivalent would require nested loops or algorithms
+   ```
+
+5. **Advanced Matrix Patterns**:
+   ```python
+   # Python: Diagonal traversal
+   matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+   
+   # Main diagonal
+   diagonal = [matrix[i][i] for i in range(min(len(matrix), len(matrix[0])))]
+   
+   # Anti-diagonal
+   anti_diagonal = [matrix[i][len(matrix[0])-1-i] for i in range(min(len(matrix), len(matrix[0])))]
+   
+   # Spiral traversal
+   def spiral_order(matrix):
+       result = []
+       while matrix:
+           # Top row
+           result += matrix.pop(0)
+           # Right column
+           if matrix and matrix[0]:
+               for row in matrix:
+                   result.append(row.pop())
+           # Bottom row (reversed)
+           if matrix:
+               result += matrix.pop()[::-1]
+           # Left column (reversed)
+           if matrix and matrix[0]:
+               for row in matrix[::-1]:
+                   result.append(row.pop(0))
+       return result
+   
+   # C++ equivalent: Would require careful index management and boundary checks
+   ```
+
+### Nested Loops: Loops Inside Loops
+
+Python's nested loops are straightforward and readable:
+
+1. **Basic Nested Loops**:
+   ```python
+   # Python: Multiplication table
+   for i in range(1, 4):     # Outer loop: rows
+       for j in range(1, 4): # Inner loop: columns
+           print(f"{i*j:2}", end=" ")
+       print()  # New line after each row
+   
+   # Output:
+   # 1 2 3
+   # 2 4 6
+   # 3 6 9
+   
+   # C++ equivalent:
+   # for(int i=1; i<4; i++) {
+   #     for(int j=1; j<4; j++) {
+   #         cout << setw(2) << i*j << " ";
+   #     }
+   #     cout << endl;
+   # }
+   ```
+
+2. **Nested Loops with Different Iterables**:
+   ```python
+   # Python: Combine elements from different lists
+   colors = ["red", "blue", "green"]
+   sizes = ["small", "medium", "large"]
+   
+   for color in colors:
+       for size in sizes:
+           print(f"{size} {color} item")
+   
+   # C++ equivalent:
+   # vector<string> colors = {"red", "blue", "green"};
+   # vector<string> sizes = {"small", "medium", "large"};
+   # for(const string& color : colors) {
+   #     for(const string& size : sizes) {
+   #         cout << size << " " << color << " item" << endl;
+   #     }
+   # }
+   ```
+
+3. **Nested Loops with Break/Continue**:
+   ```python
+   # Python: Finding first match and breaking
+   matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+   target = 5
+   
+   found = False
+   for i, row in enumerate(matrix):
+       for j, val in enumerate(row):
+           if val == target:
+               print(f"Found {target} at position ({i}, {j})")
+               found = True
+               break  # Break inner loop
+       if found:
+           break  # Break outer loop
+   
+   # C++ equivalent: Same logic with break statements
+   ```
+
+4. **List Comprehensions with Nested Loops**:
+   ```python
+   # Python: Flatten matrix using nested comprehension
+   matrix = [[1, 2], [3, 4], [5, 6]]
+   flat = [val for row in matrix for val in row]
+   # Result: [1, 2, 3, 4, 5, 6]
+   
+   # Create all combinations
+   combinations = [(x, y) for x in range(3) for y in range(3) if x != y]
+   # Result: [(0, 1), (0, 2), (1, 0), (1, 2), (2, 0), (2, 1)]
+   
+   # C++ equivalent would require nested loops or std::transform
+   ```
+
+### Advanced Input Handling Techniques
+
+1. **Reading Multiple Lines**:
+   ```python
+   # Python: Read N lines
+   n = int(input())
+   lines = [input().strip() for _ in range(n)]
+   
+   # C++ equivalent: int n; cin >> n; vector<string> lines(n); for(auto& line : lines) getline(cin, line);
+   ```
+
+2. **Reading Until EOF**:
+   ```python
+   # Python: Read all lines until EOF
+   import sys
+   for line in sys.stdin:
+       # Process line
+       pass
+   
+   # C++ equivalent: string line; while(getline(cin, line)) { /* process */ }
+   ```
+
+3. **Fast Input with sys.stdin.read()**:
+   ```python
+   # Python: Best for large inputs
+   import sys
+   data = sys.stdin.read().split()
+   index = 0
+   t = int(data[index]); index += 1
+   for _ in range(t):
+       n = int(data[index]); index += 1
+       arr = [int(data[index + i]) for i in range(n)]; index += n
+       # Process arr
+   
+   # C++ equivalent: Use fast input methods or read all at once
+   ```
+
+4. **String Input Processing**:
+   ```python
+   # Python: Process space-separated values
+   s = input().strip()
+   parts = s.split()  # Split by whitespace
+   nums = list(map(int, parts))
+   
+   # C++ equivalent: string s; getline(cin, s); stringstream ss(s); vector<int> nums; int num; while(ss >> num) nums.push_back(num);
+   ```
+
+5. **Character-by-Character Input**:
+   ```python
+   # Python: Read single characters
+   import sys
+   chars = list(sys.stdin.read().replace('\n', '').replace(' ', ''))
+   
+   # C++ equivalent: char ch; vector<char> chars; while(cin.get(ch)) { if(ch != '\n' && ch != ' ') chars.push_back(ch); }
+   ```
+
+### Control Structures Comparison
+
+1. **If-Else**:
+   ```python
+   # Python
+   if x > 0:
+       print("Positive")
+   elif x < 0:
+       print("Negative")
+   else:
+       print("Zero")
+   
+   # C++ equivalent: Same structure but with braces and semicolons
+   ```
+
+2. **While Loops**:
+   ```python
+   # Python
+   i = 0
+   while i < 10:
+       print(i)
+       i += 1
+   
+   # C++ equivalent: Identical
+   ```
+
+3. **Break and Continue**:
+   ```python
+   # Python: Same as C++
+   for i in range(10):
+       if i == 5:
+           break
+       if i % 2 == 0:
+           continue
+       print(i)
+   ```
+
+### Exception Handling
+
+```python
+# Python
+try:
+    x = int(input())
+    result = 10 / x
+except ValueError:
+    print("Invalid input")
+except ZeroDivisionError:
+    print("Division by zero")
+except Exception as e:
+    print(f"Error: {e}")
+
+# C++ equivalent:
+# try { int x; cin >> x; int result = 10/x; }
+# catch(const invalid_argument& e) { cout << "Invalid"; }
+# catch(const runtime_error& e) { cout << "Division by zero"; }
+```
+
 ### Essential DSA Data Structures and Utilities in Python
 
 Python has powerful built-ins and modules for DSA.
@@ -165,11 +618,73 @@ Python has powerful built-ins and modules for DSA.
    - `functools` for `lru_cache` (memoization).
    - `itertools` for permutations, combinations.
 
-## Chapter 1: Arrays
+---
 
-## Easy Problems
+## 2. Arrays
 
-### 1. Largest Element in an Array
+<details>
+<summary>2.1 Easy Problems</summary>
+
+- Largest Element in an Array
+- Second Largest Element
+- Check if Array is Sorted
+- Remove Duplicates from Sorted Array
+- Move Zeros to End
+- Find Missing Number
+- Single Number
+- Intersection of Two Arrays
+- Plus One
+- Two Sum
+
+</details>
+
+### 2.1 Easy Problems
+
+*Detailed solutions to be added...*
+
+<details>
+<summary>2.2 Medium Problems</summary>
+
+- 3Sum
+- Container With Most Water
+- Maximum Subarray
+- Product of Array Except Self
+- Find Minimum in Rotated Sorted Array
+- Search in Rotated Sorted Array
+- Majority Element
+- Sort Colors
+- Merge Intervals
+- Next Permutation
+
+</details>
+
+### 2.2 Medium Problems
+
+*Detailed solutions to be added...*
+
+<details>
+<summary>2.3 Hard Problems</summary>
+
+- Trapping Rain Water
+- Median of Two Sorted Arrays
+- Longest Consecutive Sequence
+- First Missing Positive
+- Jump Game II
+- Merge k Sorted Lists
+- Maximum Product Subarray
+- Find the Duplicate Number
+- Game of Life
+- Sliding Window Maximum
+
+</details>
+
+### 2.3 Hard Problems
+
+*Detailed solutions to be added...*
+
+### 2.1 Easy Problems
+
+#### 1. Largest Element in an Array
 
 #### Problem Statement
 Find the largest element in an array of integers.
@@ -1181,9 +1696,9 @@ O(n)
 #### Space Complexity
 O(n)
 
-## Medium Problems
+### 2.2 Medium Problems
 
-### 2Sum Problem
+#### 2Sum Problem
 
 #### Problem Statement
 Find two numbers in an array that add up to a target sum.
@@ -2174,9 +2689,9 @@ O(n)
 #### Space Complexity
 O(n)
 
-## Hard Problems
+### 2.3 Hard Problems
 
-### Pascal's Triangle
+#### Pascal's Triangle
 
 #### Problem Statement
 Generate the first n rows of Pascal's triangle.
