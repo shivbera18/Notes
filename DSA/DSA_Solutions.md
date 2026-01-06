@@ -542,146 +542,686 @@ class BST:
 - Word Ladder
 - Network Delay Time
 - Graph Valid Tree
+- Surrounded Regions
+- Course Schedule II
+- Redundant Connection
+- Accounts Merge
+- Number of Connected Components
+- Alien Dictionary
+- Reconstruct Itinerary
+- Minimum Height Trees
+- Critical Connections in a Network
+- Cheapest Flights Within K Stops
+- Path with Maximum Probability
+- Find the City With the Smallest Number of Neighbors
+- Evaluate Division
+- Optimize Water Distribution
+- Bus Routes
+- All Paths from Source to Target
+- Shortest Path in Binary Matrix
+- As Far from Land as Possible
+- Making A Large Island
+- Detonate the Maximum Bombs
+- Find All People With Secret
+- Throne Inheritance
 
 </details>
 
-### Graph Representations
+### 8.1 Number of Islands
 
-#### Adjacency List
-```python
-# Using dictionary
-graph = {
-    0: [1, 2],
-    1: [0, 3, 4],
-    2: [0, 4],
-    3: [1, 5],
-    4: [1, 2, 5],
-    5: [3, 4]
+**Problem Statement:** Given an m x n 2D binary grid which represents a map of '1's (land) and '0's (water), return the number of islands. An island is surrounded by water and is formed by connecting adjacent lands horizontally or vertically.
+
+**Intuition:** Use DFS or BFS to traverse each island, marking visited cells. Count each connected component of '1's.
+
+**Algorithm:**
+1. Initialize count = 0
+2. For each cell in grid:
+   - If cell == '1' and not visited, count += 1
+   - DFS/BFS from this cell to mark all connected '1's as visited
+3. Return count
+
+**C++ Code:**
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+class Solution {
+public:
+    void dfs(vector<vector<char>>& grid, int i, int j) {
+        if (i < 0 || i >= grid.size() || j < 0 || j >= grid[0].size() || grid[i][j] == '0') return;
+        grid[i][j] = '0'; // Mark as visited
+        dfs(grid, i+1, j);
+        dfs(grid, i-1, j);
+        dfs(grid, i, j+1);
+        dfs(grid, i, j-1);
+    }
+    
+    int numIslands(vector<vector<char>>& grid) {
+        int count = 0;
+        for (int i = 0; i < grid.size(); ++i) {
+            for (int j = 0; j < grid[0].size(); ++j) {
+                if (grid[i][j] == '1') {
+                    count++;
+                    dfs(grid, i, j);
+                }
+            }
+        }
+        return count;
+    }
+};
+
+int main() {
+    int m, n;
+    cin >> m >> n;
+    vector<vector<char>> grid(m, vector<char>(n));
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            cin >> grid[i][j];
+        }
+    }
+    Solution sol;
+    cout << sol.numIslands(grid) << endl;
+    return 0;
 }
-
-# Using list of lists
-graph = [
-    [1, 2],     # 0
-    [0, 3, 4],  # 1
-    [0, 4],     # 2
-    [1, 5],     # 3
-    [1, 2, 5],  # 4
-    [3, 4]      # 5
-]
 ```
 
-#### Adjacency Matrix
+**Python Code:**
 ```python
-# For dense graphs
-n = 6
-adj_matrix = [[0] * n for _ in range(n)]
-# Add edges
-adj_matrix[0][1] = 1
-adj_matrix[0][2] = 1
-# etc.
+def num_islands(grid):
+    if not grid:
+        return 0
+    
+    def dfs(i, j):
+        if i < 0 or i >= len(grid) or j < 0 or j >= len(grid[0]) or grid[i][j] == '0':
+            return
+        grid[i][j] = '0'  # Mark as visited
+        dfs(i+1, j)
+        dfs(i-1, j)
+        dfs(i, j+1)
+        dfs(i, j-1)
+    
+    count = 0
+    for i in range(len(grid)):
+        for j in range(len(grid[0])):
+            if grid[i][j] == '1':
+                count += 1
+                dfs(i, j)
+    
+    return count
+
+if __name__ == "__main__":
+    import sys
+    input = sys.stdin.read
+    data = input().split()
+    m = int(data[0])
+    n = int(data[1])
+    grid = []
+    idx = 2
+    for i in range(m):
+        row = []
+        for j in range(n):
+            row.append(data[idx])
+            idx += 1
+        grid.append(row)
+    print(num_islands(grid))
 ```
 
-### Graph Traversal
+**Complexity Analysis:**
+- Time: O(m*n)
+- Space: O(m*n) worst case (recursion stack)
 
-#### DFS (Depth-First Search)
+### 8.2 Clone Graph
+
+**Problem Statement:** Given a reference of a node in a connected undirected graph, return a deep copy (clone) of the graph.
+
+**Intuition:** Use DFS or BFS with a hash map to track cloned nodes. When visiting a node, create its clone and recursively clone its neighbors.
+
+**Algorithm:**
+1. If node is None, return None
+2. Use hash map to store original -> clone mapping
+3. DFS function:
+   - If node in visited, return visited[node]
+   - Create clone of current node
+   - Add to visited
+   - For each neighbor, recursively clone and add to clone's neighbors
+4. Return clone of original node
+
+**C++ Code:**
+```cpp
+class Node {
+public:
+    int val;
+    vector<Node*> neighbors;
+    Node() {
+        val = 0;
+        neighbors = vector<Node*>();
+    }
+    Node(int _val) {
+        val = _val;
+        neighbors = vector<Node*>();
+    }
+    Node(int _val, vector<Node*> _neighbors) {
+        val = _val;
+        neighbors = _neighbors;
+    }
+};
+
+class Solution {
+public:
+    unordered_map<Node*, Node*> visited;
+    
+    Node* cloneGraph(Node* node) {
+        if (!node) return nullptr;
+        if (visited.count(node)) return visited[node];
+        
+        Node* clone = new Node(node->val);
+        visited[node] = clone;
+        
+        for (Node* neighbor : node->neighbors) {
+            clone->neighbors.push_back(cloneGraph(neighbor));
+        }
+        
+        return clone;
+    }
+};
+```
+
+**Python Code:**
 ```python
-def dfs(graph, start, visited=None):
-    if visited is None:
-        visited = set()
-    visited.add(start)
-    print(start, end=" ")
-    for neighbor in graph[start]:
-        if neighbor not in visited:
-            dfs(graph, neighbor, visited)
+class Node:
+    def __init__(self, val=0, neighbors=None):
+        self.val = val
+        self.neighbors = neighbors if neighbors is not None else []
 
-# Iterative DFS
-def dfs_iterative(graph, start):
-    visited = set()
-    stack = [start]
-    while stack:
-        node = stack.pop()
-        if node not in visited:
-            visited.add(node)
-            print(node, end=" ")
-            # Add unvisited neighbors
-            for neighbor in reversed(graph[node]):
-                if neighbor not in visited:
-                    stack.append(neighbor)
+def clone_graph(node):
+    if not node:
+        return None
+    
+    visited = {}
+    
+    def dfs(original):
+        if original in visited:
+            return visited[original]
+        
+        clone = Node(original.val)
+        visited[original] = clone
+        
+        for neighbor in original.neighbors:
+            clone.neighbors.append(dfs(neighbor))
+        
+        return clone
+    
+    return dfs(node)
 ```
 
-#### BFS (Breadth-First Search)
+**Complexity Analysis:**
+- Time: O(V + E)
+- Space: O(V)
+
+### 8.3 Course Schedule
+
+**Problem Statement:** There are a total of numCourses courses you have to take, labeled from 0 to numCourses - 1. You are given an array prerequisites where prerequisites[i] = [ai, bi] indicates that you must take course bi first if you want to take course ai. Return true if you can finish all courses.
+
+**Intuition:** This is a cycle detection problem in directed graph. Use topological sort - if we can complete topological sort, no cycle exists.
+
+**Algorithm:**
+1. Build adjacency list and in-degree array
+2. Use queue for nodes with in-degree 0
+3. While queue not empty:
+   - Dequeue node, count completed courses
+   - For each neighbor, decrease in-degree
+   - If in-degree becomes 0, enqueue
+4. Return count == numCourses
+
+**C++ Code:**
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+class Solution {
+public:
+    bool canFinish(int numCourses, vector<vector<int>>& prerequisites) {
+        vector<vector<int>> graph(numCourses);
+        vector<int> inDegree(numCourses, 0);
+        
+        for (auto& prereq : prerequisites) {
+            graph[prereq[1]].push_back(prereq[0]);
+            inDegree[prereq[0]]++;
+        }
+        
+        queue<int> q;
+        for (int i = 0; i < numCourses; ++i) {
+            if (inDegree[i] == 0) q.push(i);
+        }
+        
+        int count = 0;
+        while (!q.empty()) {
+            int course = q.front(); q.pop();
+            count++;
+            
+            for (int next : graph[course]) {
+                inDegree[next]--;
+                if (inDegree[next] == 0) q.push(next);
+            }
+        }
+        
+        return count == numCourses;
+    }
+};
+
+int main() {
+    int numCourses, p;
+    cin >> numCourses >> p;
+    vector<vector<int>> prerequisites(p, vector<int>(2));
+    for (int i = 0; i < p; ++i) {
+        cin >> prerequisites[i][0] >> prerequisites[i][1];
+    }
+    Solution sol;
+    cout << (sol.canFinish(numCourses, prerequisites) ? "true" : "false") << endl;
+    return 0;
+}
+```
+
+**Python Code:**
 ```python
 from collections import deque
 
-def bfs(graph, start):
-    visited = set()
-    queue = deque([start])
-    visited.add(start)
+def can_finish(num_courses, prerequisites):
+    graph = [[] for _ in range(num_courses)]
+    in_degree = [0] * num_courses
+    
+    for course, prereq in prerequisites:
+        graph[prereq].append(course)
+        in_degree[course] += 1
+    
+    queue = deque([i for i in range(num_courses) if in_degree[i] == 0])
+    count = 0
     
     while queue:
-        node = queue.popleft()
-        print(node, end=" ")
+        course = queue.popleft()
+        count += 1
         
-        for neighbor in graph[node]:
-            if neighbor not in visited:
-                visited.add(neighbor)
-                queue.append(neighbor)
+        for next_course in graph[course]:
+            in_degree[next_course] -= 1
+            if in_degree[next_course] == 0:
+                queue.append(next_course)
+    
+    return count == num_courses
+
+if __name__ == "__main__":
+    import sys
+    input = sys.stdin.read
+    data = input().split()
+    num_courses = int(data[0])
+    p = int(data[1])
+    prerequisites = []
+    for i in range(p):
+        prerequisites.append([int(data[2 + 2*i]), int(data[3 + 2*i])])
+    print(can_finish(num_courses, prerequisites))
 ```
 
-### Common Graph Algorithms
+**Complexity Analysis:**
+- Time: O(V + E)
+- Space: O(V + E)
 
-#### Shortest Path - Dijkstra's Algorithm
+### 8.4 Pacific Atlantic Water Flow
+
+**Problem Statement:** Given an m x n matrix of non-negative integers representing the height of each unit cell in a continent, the "Pacific ocean" touches the left and top edges of the matrix and the "Atlantic ocean" touches the right and bottom edges. Water can only flow in four directions (up, down, left, or right) from a cell to another one with height equal or lower. Find the list of grid coordinates where water can flow to both the Pacific and Atlantic ocean.
+
+**Intuition:** Start from Pacific and Atlantic borders, use DFS/BFS to find cells that can reach each ocean. Intersection gives cells that can reach both.
+
+**Algorithm:**
+1. Create two visited matrices for Pacific and Atlantic
+2. DFS from Pacific borders (left, top) marking reachable cells
+3. DFS from Atlantic borders (right, bottom) marking reachable cells
+4. Find intersection of both visited matrices
+5. Return coordinates where both are true
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    void dfs(vector<vector<int>>& heights, vector<vector<bool>>& visited, int i, int j) {
+        visited[i][j] = true;
+        vector<pair<int, int>> dirs = {{0,1}, {1,0}, {0,-1}, {-1,0}};
+        
+        for (auto& dir : dirs) {
+            int ni = i + dir.first, nj = j + dir.second;
+            if (ni >= 0 && ni < heights.size() && nj >= 0 && nj < heights[0].size() 
+                && !visited[ni][nj] && heights[ni][nj] >= heights[i][j]) {
+                dfs(heights, visited, ni, nj);
+            }
+        }
+    }
+    
+    vector<vector<int>> pacificAtlantic(vector<vector<int>>& heights) {
+        int m = heights.size(), n = heights[0].size();
+        vector<vector<bool>> pacific(m, vector<bool>(n, false));
+        vector<vector<bool>> atlantic(m, vector<bool>(n, false));
+        
+        // Pacific borders
+        for (int i = 0; i < m; ++i) dfs(heights, pacific, i, 0);
+        for (int j = 0; j < n; ++j) dfs(heights, pacific, 0, j);
+        
+        // Atlantic borders
+        for (int i = 0; i < m; ++i) dfs(heights, atlantic, i, n-1);
+        for (int j = 0; j < n; ++j) dfs(heights, atlantic, m-1, j);
+        
+        vector<vector<int>> result;
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (pacific[i][j] && atlantic[i][j]) {
+                    result.push_back({i, j});
+                }
+            }
+        }
+        
+        return result;
+    }
+};
+```
+
+**Python Code:**
+```python
+def pacific_atlantic(heights):
+    if not heights:
+        return []
+    
+    m, n = len(heights), len(heights[0])
+    pacific = [[False] * n for _ in range(m)]
+    atlantic = [[False] * n for _ in range(m)]
+    
+    def dfs(i, j, visited):
+        visited[i][j] = True
+        for di, dj in [(0,1), (1,0), (0,-1), (-1,0)]:
+            ni, nj = i + di, j + dj
+            if (0 <= ni < m and 0 <= nj < n and 
+                not visited[ni][nj] and heights[ni][nj] >= heights[i][j]):
+                dfs(ni, nj, visited)
+    
+    # Pacific
+    for i in range(m):
+        dfs(i, 0, pacific)
+    for j in range(n):
+        dfs(0, j, pacific)
+    
+    # Atlantic
+    for i in range(m):
+        dfs(i, n-1, atlantic)
+    for j in range(n):
+        dfs(m-1, j, atlantic)
+    
+    result = []
+    for i in range(m):
+        for j in range(n):
+            if pacific[i][j] and atlantic[i][j]:
+                result.append([i, j])
+    
+    return result
+```
+
+**Complexity Analysis:**
+- Time: O(m*n)
+- Space: O(m*n)
+
+### 8.5 Word Ladder
+
+**Problem Statement:** A transformation sequence from word beginWord to word endWord using a dictionary wordList is a sequence of words beginWord -> s1 -> s2 -> ... -> sk such that every adjacent pair of words differs by a single letter, and every si is in wordList. Return the number of words in the shortest transformation sequence, or 0 if no such sequence exists.
+
+**Intuition:** BFS where each level represents one letter change. Use queue to explore all possible transformations at each step.
+
+**Algorithm:**
+1. If endWord not in wordList, return 0
+2. Use set for wordList for O(1) lookup
+3. BFS: queue contains (word, steps)
+4. For each word, generate all possible transformations by changing one letter
+5. If transformation in wordList and not visited, add to queue with steps+1
+6. Return steps when reach endWord
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int ladderLength(string beginWord, string endWord, vector<string>& wordList) {
+        unordered_set<string> wordSet(wordList.begin(), wordList.end());
+        if (wordSet.find(endWord) == wordSet.end()) return 0;
+        
+        queue<pair<string, int>> q;
+        q.push({beginWord, 1});
+        unordered_set<string> visited;
+        visited.insert(beginWord);
+        
+        while (!q.empty()) {
+            auto [word, steps] = q.front(); q.pop();
+            
+            if (word == endWord) return steps;
+            
+            for (int i = 0; i < word.size(); ++i) {
+                string temp = word;
+                for (char c = 'a'; c <= 'z'; ++c) {
+                    temp[i] = c;
+                    if (wordSet.count(temp) && visited.find(temp) == visited.end()) {
+                        visited.insert(temp);
+                        q.push({temp, steps + 1});
+                    }
+                }
+            }
+        }
+        
+        return 0;
+    }
+};
+```
+
+**Python Code:**
+```python
+from collections import deque
+
+def ladder_length(begin_word, end_word, word_list):
+    word_set = set(word_list)
+    if end_word not in word_set:
+        return 0
+    
+    queue = deque([(begin_word, 1)])
+    visited = set([begin_word])
+    
+    while queue:
+        word, steps = queue.popleft()
+        
+        if word == end_word:
+            return steps
+        
+        for i in range(len(word)):
+            for c in 'abcdefghijklmnopqrstuvwxyz':
+                temp = word[:i] + c + word[i+1:]
+                if temp in word_set and temp not in visited:
+                    visited.add(temp)
+                    queue.append((temp, steps + 1))
+    
+    return 0
+```
+
+**Complexity Analysis:**
+- Time: O(N * 26 * L) where N = wordList size, L = word length
+- Space: O(N)
+
+### 8.6 Network Delay Time
+
+**Problem Statement:** You are given a network of n nodes, labeled from 1 to n. You are also given times, a list of travel times as directed edges times[i] = (ui, vi, wi), where ui is the source node, vi is the target node, and wi is the time it takes for a signal to travel from source to target. We will send a signal from a given node k. Return the time it takes for all the n nodes to receive the signal. If it is impossible for all the n nodes to receive the signal, return -1.
+
+**Intuition:** Use Dijkstra's algorithm to find shortest path from source k to all nodes. The maximum distance is the answer.
+
+**Algorithm:**
+1. Build graph as adjacency list: {node: [(neighbor, time), ...]}
+2. Initialize distances array with INF, distances[k-1] = 0
+3. Use priority queue for Dijkstra: (time, node)
+4. While queue not empty:
+   - Pop smallest time node
+   - For each neighbor, update distance if shorter
+5. Find maximum in distances array, return -1 if any INF
+
+**C++ Code:**
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+class Solution {
+public:
+    int networkDelayTime(vector<vector<int>>& times, int n, int k) {
+        vector<vector<pair<int, int>>> graph(n + 1);
+        for (auto& time : times) {
+            graph[time[0]].push_back({time[1], time[2]});
+        }
+        
+        vector<int> dist(n + 1, INT_MAX);
+        dist[k] = 0;
+        
+        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+        pq.push({0, k});
+        
+        while (!pq.empty()) {
+            auto [time, node] = pq.top(); pq.pop();
+            
+            if (time > dist[node]) continue;
+            
+            for (auto& [neighbor, weight] : graph[node]) {
+                int newTime = time + weight;
+                if (newTime < dist[neighbor]) {
+                    dist[neighbor] = newTime;
+                    pq.push({newTime, neighbor});
+                }
+            }
+        }
+        
+        int maxTime = 0;
+        for (int i = 1; i <= n; ++i) {
+            if (dist[i] == INT_MAX) return -1;
+            maxTime = max(maxTime, dist[i]);
+        }
+        
+        return maxTime;
+    }
+};
+
+int main() {
+    int n, k, e;
+    cin >> n >> k >> e;
+    vector<vector<int>> times(e, vector<int>(3));
+    for (int i = 0; i < e; ++i) {
+        cin >> times[i][0] >> times[i][1] >> times[i][2];
+    }
+    Solution sol;
+    cout << sol.networkDelayTime(times, n, k) << endl;
+    return 0;
+}
+```
+
+**Python Code:**
 ```python
 import heapq
 
-def dijkstra(graph, start):
-    # graph: dict of {node: [(neighbor, weight), ...]}
-    distances = {node: float('inf') for node in graph}
-    distances[start] = 0
-    pq = [(0, start)]  # (distance, node)
+def network_delay_time(times, n, k):
+    graph = [[] for _ in range(n + 1)]
+    for u, v, w in times:
+        graph[u].append((v, w))
+    
+    dist = [float('inf')] * (n + 1)
+    dist[k] = 0
+    
+    pq = [(0, k)]  # (time, node)
     
     while pq:
-        current_distance, current_node = heapq.heappop(pq)
+        time, node = heapq.heappop(pq)
         
-        if current_distance > distances[current_node]:
+        if time > dist[node]:
             continue
-            
-        for neighbor, weight in graph[current_node]:
-            distance = current_distance + weight
-            if distance < distances[neighbor]:
-                distances[neighbor] = distance
-                heapq.heappush(pq, (distance, neighbor))
-    
-    return distances
-```
-
-#### Topological Sort
-```python
-from collections import deque
-
-def topological_sort(graph):
-    # graph: adjacency list
-    in_degree = {node: 0 for node in graph}
-    for node in graph:
-        for neighbor in graph[node]:
-            in_degree[neighbor] += 1
-    
-    queue = deque([node for node in in_degree if in_degree[node] == 0])
-    result = []
-    
-    while queue:
-        node = queue.popleft()
-        result.append(node)
         
-        for neighbor in graph[node]:
-            in_degree[neighbor] -= 1
-            if in_degree[neighbor] == 0:
-                queue.append(neighbor)
+        for neighbor, weight in graph[node]:
+            new_time = time + weight
+            if new_time < dist[neighbor]:
+                dist[neighbor] = new_time
+                heapq.heappush(pq, (new_time, neighbor))
     
-    return result if len(result) == len(graph) else []  # Empty if cycle
+    max_time = max(dist[1:])
+    return max_time if max_time != float('inf') else -1
+
+if __name__ == "__main__":
+    import sys
+    input = sys.stdin.read
+    data = input().split()
+    n = int(data[0])
+    k = int(data[1])
+    e = int(data[2])
+    times = []
+    for i in range(e):
+        times.append([int(data[3 + 3*i]), int(data[4 + 3*i]), int(data[5 + 3*i])])
+    print(network_delay_time(times, n, k))
 ```
 
-#### Union-Find (Disjoint Set)
+**Complexity Analysis:**
+- Time: O((V + E) log V)
+- Space: O(V + E)
+
+### 8.7 Graph Valid Tree
+
+**Problem Statement:** Given n nodes labeled from 0 to n-1 and a list of undirected edges, check whether these edges make up a valid tree.
+
+**Intuition:** A graph is a tree if it's connected and has no cycles. Use Union-Find to check for cycles and ensure all nodes are connected.
+
+**Algorithm:**
+1. If edges.size() != n-1, return false (tree property)
+2. Initialize Union-Find with n nodes
+3. For each edge [u,v]:
+   - If find(u) == find(v), cycle exists, return false
+   - Union(u, v)
+4. Check if all nodes have same parent (connected)
+5. Return true
+
+**C++ Code:**
+```cpp
+class UnionFind {
+public:
+    vector<int> parent, rank;
+    UnionFind(int size) {
+        parent.resize(size);
+        rank.resize(size, 0);
+        for (int i = 0; i < size; ++i) parent[i] = i;
+    }
+    
+    int find(int x) {
+        if (parent[x] != x) parent[x] = find(parent[x]);
+        return parent[x];
+    }
+    
+    bool unite(int x, int y) {
+        int px = find(x), py = find(y);
+        if (px == py) return false;
+        if (rank[px] < rank[py]) parent[px] = py;
+        else if (rank[px] > rank[py]) parent[py] = px;
+        else {
+            parent[py] = px;
+            rank[px]++;
+        }
+        return true;
+    }
+};
+
+class Solution {
+public:
+    bool validTree(int n, vector<vector<int>>& edges) {
+        if (edges.size() != n - 1) return false;
+        
+        UnionFind uf(n);
+        for (auto& edge : edges) {
+            if (!uf.unite(edge[0], edge[1])) return false;
+        }
+        
+        return true;
+    }
+};
+```
+
+**Python Code:**
 ```python
 class UnionFind:
     def __init__(self, size):
@@ -690,30 +1230,2228 @@ class UnionFind:
     
     def find(self, x):
         if self.parent[x] != x:
-            self.parent[x] = self.find(self.parent[x])  # Path compression
+            self.parent[x] = self.find(self.parent[x])
         return self.parent[x]
     
-    def union(self, x, y):
+    def unite(self, x, y):
         px, py = self.find(x), self.find(y)
-        if px != py:
-            if self.rank[px] < self.rank[py]:
-                self.parent[px] = py
-            elif self.rank[px] > self.rank[py]:
-                self.parent[py] = px
-            else:
-                self.parent[py] = px
-                self.rank[px] += 1
+        if px == py:
+            return False
+        if self.rank[px] < self.rank[py]:
+            self.parent[px] = py
+        elif self.rank[px] > self.rank[py]:
+            self.parent[py] = px
+        else:
+            self.parent[py] = px
+            self.rank[px] += 1
+        return True
+
+def valid_tree(n, edges):
+    if len(edges) != n - 1:
+        return False
+    
+    uf = UnionFind(n)
+    for u, v in edges:
+        if not uf.unite(u, v):
+            return False
+    
+    return True
 ```
 
-### Common Graph Problems
-- Connected components
-- Cycle detection
-- Minimum spanning tree (Kruskal's/Prim's)
-- Shortest path in unweighted graph
-- Bipartite graph check
-- Strongly connected components
+**Complexity Analysis:**
+- Time: O(V + E α(V)) where α is inverse Ackermann function
+- Space: O(V)
 
----
+### 8.8 Surrounded Regions
+
+**Problem Statement:** Given an m x n matrix board containing 'X' and 'O', capture all regions that are 4-directionally surrounded by 'X'. A region is captured by flipping all 'O's into 'X's in that surrounded region.
+
+**Intuition:** Any 'O' connected to boundary cannot be surrounded. Use DFS/BFS from boundary 'O's to mark safe regions, then flip unmarked 'O's to 'X'.
+
+**Algorithm:**
+1. For each boundary cell:
+   - If 'O', DFS/BFS to mark all connected 'O's as safe (use 'S')
+2. Iterate through board:
+   - 'O' -> 'X' (surrounded)
+   - 'S' -> 'O' (safe)
+3. Return modified board
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    void dfs(vector<vector<char>>& board, int i, int j) {
+        if (i < 0 || i >= board.size() || j < 0 || j >= board[0].size() || board[i][j] != 'O') return;
+        board[i][j] = 'S'; // Safe
+        dfs(board, i+1, j);
+        dfs(board, i-1, j);
+        dfs(board, i, j+1);
+        dfs(board, i, j-1);
+    }
+    
+    void solve(vector<vector<char>>& board) {
+        if (board.empty()) return;
+        int m = board.size(), n = board[0].size();
+        
+        // Mark boundary 'O's as safe
+        for (int i = 0; i < m; ++i) {
+            dfs(board, i, 0);
+            dfs(board, i, n-1);
+        }
+        for (int j = 0; j < n; ++j) {
+            dfs(board, 0, j);
+            dfs(board, m-1, j);
+        }
+        
+        // Flip regions
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (board[i][j] == 'O') board[i][j] = 'X';
+                else if (board[i][j] == 'S') board[i][j] = 'O';
+            }
+        }
+    }
+};
+```
+
+**Python Code:**
+```python
+def solve(board):
+    if not board:
+        return
+    
+    m, n = len(board), len(board[0])
+    
+    def dfs(i, j):
+        if i < 0 or i >= m or j < 0 or j >= n or board[i][j] != 'O':
+            return
+        board[i][j] = 'S'  # Safe
+        dfs(i+1, j)
+        dfs(i-1, j)
+        dfs(i, j+1)
+        dfs(i, j-1)
+    
+    # Mark boundary 'O's as safe
+    for i in range(m):
+        dfs(i, 0)
+        dfs(i, n-1)
+    for j in range(n):
+        dfs(0, j)
+        dfs(m-1, j)
+    
+    # Flip regions
+    for i in range(m):
+        for j in range(n):
+            if board[i][j] == 'O':
+                board[i][j] = 'X'
+            elif board[i][j] == 'S':
+                board[i][j] = 'O'
+```
+
+**Complexity Analysis:**
+- Time: O(m*n)
+- Space: O(m*n) worst case (recursion stack)
+
+### 8.9 Course Schedule II
+
+**Problem Statement:** There are a total of numCourses courses you have to take, labeled from 0 to numCourses - 1. You are given an array prerequisites where prerequisites[i] = [ai, bi] indicates that you must take course bi first if you want to take course ai. Return the ordering of courses you should take to finish all courses. If there are many valid answers, return any of them. If it is impossible to finish all courses, return an empty array.
+
+**Intuition:** Use topological sort with Kahn's algorithm. Build graph and in-degree array, then process nodes with in-degree 0.
+
+**Algorithm:**
+1. Build adjacency list and in-degree array
+2. Initialize queue with nodes having in-degree 0
+3. While queue not empty:
+   - Dequeue node, add to result
+   - For each neighbor, decrease in-degree
+   - If in-degree becomes 0, enqueue
+4. If result size == numCourses, return result, else []
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    vector<int> findOrder(int numCourses, vector<vector<int>>& prerequisites) {
+        vector<vector<int>> graph(numCourses);
+        vector<int> inDegree(numCourses, 0);
+        
+        for (auto& prereq : prerequisites) {
+            graph[prereq[1]].push_back(prereq[0]);
+            inDegree[prereq[0]]++;
+        }
+        
+        queue<int> q;
+        for (int i = 0; i < numCourses; ++i) {
+            if (inDegree[i] == 0) q.push(i);
+        }
+        
+        vector<int> result;
+        while (!q.empty()) {
+            int course = q.front(); q.pop();
+            result.push_back(course);
+            
+            for (int next : graph[course]) {
+                inDegree[next]--;
+                if (inDegree[next] == 0) q.push(next);
+            }
+        }
+        
+        return result.size() == numCourses ? result : vector<int>();
+    }
+};
+```
+
+**Python Code:**
+```python
+from collections import deque
+
+def find_order(num_courses, prerequisites):
+    graph = [[] for _ in range(num_courses)]
+    in_degree = [0] * num_courses
+    
+    for course, prereq in prerequisites:
+        graph[prereq].append(course)
+        in_degree[course] += 1
+    
+    queue = deque([i for i in range(num_courses) if in_degree[i] == 0])
+    result = []
+    
+    while queue:
+        course = queue.popleft()
+        result.append(course)
+        
+        for next_course in graph[course]:
+            in_degree[next_course] -= 1
+            if in_degree[next_course] == 0:
+                queue.append(next_course)
+    
+    return result if len(result) == num_courses else []
+```
+
+**Complexity Analysis:**
+- Time: O(V + E)
+- Space: O(V + E)
+
+### 8.10 Redundant Connection
+
+**Problem Statement:** In this problem, a tree is an undirected graph that is connected and has no cycles. You are given a graph that started as a tree with n nodes labeled from 1 to n, with one additional edge added. The added edge has two different vertices chosen from 1 to n, and was not an edge that already existed. The graph is represented as an array edges of length n where edges[i] = [ai, bi] indicates that there is an edge between nodes ai and bi in the graph. Return an edge that can be removed so that the resulting graph is a tree of n nodes.
+
+**Intuition:** Use Union-Find. The redundant edge is the first edge that connects two nodes already in the same component.
+
+**Algorithm:**
+1. Initialize Union-Find with n+1 nodes
+2. For each edge [u,v]:
+   - If find(u) == find(v), this is redundant edge, return it
+   - Else, union(u, v)
+3. Return last edge (shouldn't reach here for valid input)
+
+**C++ Code:**
+```cpp
+class UnionFind {
+public:
+    vector<int> parent;
+    UnionFind(int size) {
+        parent.resize(size);
+        for (int i = 0; i < size; ++i) parent[i] = i;
+    }
+    
+    int find(int x) {
+        if (parent[x] != x) parent[x] = find(parent[x]);
+        return parent[x];
+    }
+    
+    bool unite(int x, int y) {
+        int px = find(x), py = find(y);
+        if (px == py) return false;
+        parent[px] = py;
+        return true;
+    }
+};
+
+class Solution {
+public:
+    vector<int> findRedundantConnection(vector<vector<int>>& edges) {
+        UnionFind uf(edges.size() + 1);
+        
+        for (auto& edge : edges) {
+            if (!uf.unite(edge[0], edge[1])) {
+                return edge;
+            }
+        }
+        
+        return {};
+    }
+};
+```
+
+**Python Code:**
+```python
+class UnionFind:
+    def __init__(self, size):
+        self.parent = list(range(size))
+    
+    def find(self, x):
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])
+        return self.parent[x]
+    
+    def unite(self, x, y):
+        px, py = self.find(x), self.find(y)
+        if px == py:
+            return False
+        self.parent[px] = py
+        return True
+
+def find_redundant_connection(edges):
+    uf = UnionFind(len(edges) + 1)
+    
+    for u, v in edges:
+        if not uf.unite(u, v):
+            return [u, v]
+    
+    return []
+```
+
+**Complexity Analysis:**
+- Time: O(V + E α(V))
+- Space: O(V)
+
+### 8.11 Accounts Merge
+
+**Problem Statement:** Given a list of accounts where each element accounts[i] is a list of strings, where the first element accounts[i][0] is a name, and the rest of the elements are emails representing emails of the account. Now, we would like to merge these accounts. Two accounts definitely belong to the same person if there is some common email to both accounts. Note that even if two accounts have the same name, they may belong to different people as people could have the same name. A person can have any number of accounts initially, but all of them have the same name. After merging the accounts, return the accounts in the following format: the first element of each account is the name, and the rest of the elements are emails in sorted order.
+
+**Intuition:** Use Union-Find where each email is a node. Group emails that belong to same account, then merge accounts with common emails.
+
+**Algorithm:**
+1. Create email -> name mapping and email -> index mapping
+2. Initialize Union-Find with number of unique emails
+3. For each account, union all emails in the account
+4. Group emails by their root parent
+5. For each group, create account with name and sorted emails
+6. Return merged accounts
+
+**C++ Code:**
+```cpp
+class UnionFind {
+public:
+    vector<int> parent;
+    UnionFind(int size) {
+        parent.resize(size);
+        for (int i = 0; i < size; ++i) parent[i] = i;
+    }
+    
+    int find(int x) {
+        if (parent[x] != x) parent[x] = find(parent[x]);
+        return parent[x];
+    }
+    
+    void unite(int x, int y) {
+        int px = find(x), py = find(y);
+        if (px != py) parent[px] = py;
+    }
+};
+
+class Solution {
+public:
+    vector<vector<string>> accountsMerge(vector<vector<string>>& accounts) {
+        unordered_map<string, string> emailToName;
+        unordered_map<string, int> emailToId;
+        int id = 0;
+        
+        for (auto& account : accounts) {
+            string name = account[0];
+            for (int i = 1; i < account.size(); ++i) {
+                string email = account[i];
+                emailToName[email] = name;
+                if (emailToId.find(email) == emailToId.end()) {
+                    emailToId[email] = id++;
+                }
+            }
+        }
+        
+        UnionFind uf(id);
+        
+        for (auto& account : accounts) {
+            int firstId = emailToId[account[1]];
+            for (int i = 2; i < account.size(); ++i) {
+                uf.unite(firstId, emailToId[account[i]]);
+            }
+        }
+        
+        unordered_map<int, vector<string>> groups;
+        for (auto& p : emailToId) {
+            int root = uf.find(p.second);
+            groups[root].push_back(p.first);
+        }
+        
+        vector<vector<string>> result;
+        for (auto& p : groups) {
+            vector<string> account = {emailToName[p.second[0]]};
+            sort(p.second.begin(), p.second.end());
+            account.insert(account.end(), p.second.begin(), p.second.end());
+            result.push_back(account);
+        }
+        
+        return result;
+    }
+};
+```
+
+**Python Code:**
+```python
+class UnionFind:
+    def __init__(self, size):
+        self.parent = list(range(size))
+    
+    def find(self, x):
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])
+        return self.parent[x]
+    
+    def unite(self, x, y):
+        px, py = self.find(x), self.find(y)
+        if px != py:
+            self.parent[px] = py
+
+def accounts_merge(accounts):
+    email_to_name = {}
+    email_to_id = {}
+    id_counter = 0
+    
+    for account in accounts:
+        name = account[0]
+        for email in account[1:]:
+            email_to_name[email] = name
+            if email not in email_to_id:
+                email_to_id[email] = id_counter
+                id_counter += 1
+    
+    uf = UnionFind(id_counter)
+    
+    for account in accounts:
+        first_id = email_to_id[account[1]]
+        for email in account[2:]:
+            uf.unite(first_id, email_to_id[email])
+    
+    groups = {}
+    for email, id_val in email_to_id.items():
+        root = uf.find(id_val)
+        if root not in groups:
+            groups[root] = []
+        groups[root].append(email)
+    
+    result = []
+    for emails in groups.values():
+        name = email_to_name[emails[0]]
+        result.append([name] + sorted(emails))
+    
+    return result
+```
+
+**Complexity Analysis:**
+- Time: O(N log N) where N is total emails
+- Space: O(N)
+
+### 8.12 Number of Connected Components
+
+**Problem Statement:** Given n nodes labeled from 0 to n-1 and a list of undirected edges, write a function to find the number of connected components in an undirected graph.
+
+**Intuition:** Use Union-Find or DFS/BFS to count connected components. Each time we start a new traversal from unvisited node, increment count.
+
+**Algorithm:**
+1. Build adjacency list
+2. Initialize visited array and count = 0
+3. For each node:
+   - If not visited, count += 1, DFS/BFS from this node
+4. Return count
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    void dfs(vector<vector<int>>& graph, vector<bool>& visited, int node) {
+        visited[node] = true;
+        for (int neighbor : graph[node]) {
+            if (!visited[neighbor]) {
+                dfs(graph, visited, neighbor);
+            }
+        }
+    }
+    
+    int countComponents(int n, vector<vector<int>>& edges) {
+        vector<vector<int>> graph(n);
+        for (auto& edge : edges) {
+            graph[edge[0]].push_back(edge[1]);
+            graph[edge[1]].push_back(edge[0]);
+        }
+        
+        vector<bool> visited(n, false);
+        int count = 0;
+        
+        for (int i = 0; i < n; ++i) {
+            if (!visited[i]) {
+                count++;
+                dfs(graph, visited, i);
+            }
+        }
+        
+        return count;
+    }
+};
+```
+
+**Python Code:**
+```python
+def count_components(n, edges):
+    graph = [[] for _ in range(n)]
+    for u, v in edges:
+        graph[u].append(v)
+        graph[v].append(u)
+    
+    visited = [False] * n
+    count = 0
+    
+    def dfs(node):
+        visited[node] = True
+        for neighbor in graph[node]:
+            if not visited[neighbor]:
+                dfs(neighbor)
+    
+    for i in range(n):
+        if not visited[i]:
+            count += 1
+            dfs(i)
+    
+    return count
+```
+
+**Complexity Analysis:**
+- Time: O(V + E)
+- Space: O(V + E)
+
+### 8.13 Alien Dictionary
+
+**Problem Statement:** There is a new alien language that uses the English alphabet. However, the order among the letters is unknown to you. You are given a list of strings words from the alien language's dictionary, where the strings in words are sorted lexicographically by the rules of this new language. Derive the order of letters in this language, and return it as a string. If there is no valid ordering, return "".
+
+**Intuition:** Build graph where edge A->B means A comes before B. Use topological sort to find the order.
+
+**Algorithm:**
+1. Build graph and in-degree for each character
+2. For consecutive words, find first differing character, add edge
+3. Use Kahn's algorithm for topological sort
+4. If result length == unique characters, return order, else ""
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    string alienOrder(vector<string>& words) {
+        unordered_map<char, vector<char>> graph;
+        unordered_map<char, int> inDegree;
+        
+        // Initialize all characters
+        for (auto& word : words) {
+            for (char c : word) {
+                if (graph.find(c) == graph.end()) {
+                    graph[c] = {};
+                    inDegree[c] = 0;
+                }
+            }
+        }
+        
+        // Build graph
+        for (int i = 0; i < words.size() - 1; ++i) {
+            string w1 = words[i], w2 = words[i+1];
+            int len = min(w1.size(), w2.size());
+            bool found = false;
+            
+            for (int j = 0; j < len; ++j) {
+                if (w1[j] != w2[j]) {
+                    graph[w1[j]].push_back(w2[j]);
+                    inDegree[w2[j]]++;
+                    found = true;
+                    break;
+                }
+            }
+            
+            if (!found && w1.size() > w2.size()) return "";
+        }
+        
+        // Topological sort
+        queue<char> q;
+        for (auto& p : inDegree) {
+            if (p.second == 0) q.push(p.first);
+        }
+        
+        string result;
+        while (!q.empty()) {
+            char c = q.front(); q.pop();
+            result += c;
+            
+            for (char next : graph[c]) {
+                inDegree[next]--;
+                if (inDegree[next] == 0) q.push(next);
+            }
+        }
+        
+        return result.size() == graph.size() ? result : "";
+    }
+};
+```
+
+**Python Code:**
+```python
+from collections import deque, defaultdict
+
+def alien_order(words):
+    graph = defaultdict(list)
+    in_degree = {}
+    
+    # Initialize all characters
+    for word in words:
+        for c in word:
+            if c not in in_degree:
+                in_degree[c] = 0
+    
+    # Build graph
+    for i in range(len(words) - 1):
+        w1, w2 = words[i], words[i+1]
+        min_len = min(len(w1), len(w2))
+        found = False
+        
+        for j in range(min_len):
+            if w1[j] != w2[j]:
+                if w2[j] not in graph[w1[j]]:
+                    graph[w1[j]].append(w2[j])
+                    in_degree[w2[j]] += 1
+                found = True
+                break
+        
+        if not found and len(w1) > len(w2):
+            return ""
+    
+    # Topological sort
+    queue = deque([c for c in in_degree if in_degree[c] == 0])
+    result = []
+    
+    while queue:
+        c = queue.popleft()
+        result.append(c)
+        
+        for next_c in graph[c]:
+            in_degree[next_c] -= 1
+            if in_degree[next_c] == 0:
+                queue.append(next_c)
+    
+    return ''.join(result) if len(result) == len(in_degree) else ""
+```
+
+**Complexity Analysis:**
+- Time: O(C + E) where C is total characters
+- Space: O(C)
+
+### 8.14 Reconstruct Itinerary
+
+**Problem Statement:** You are given a list of airline tickets where tickets[i] = [fromi, toi] represent the departure and the arrival airports of one flight. Reconstruct the itinerary in order and return it. All of the tickets belong to a man who departs from "JFK", so the itinerary must begin with "JFK". If there are multiple valid itineraries, you should return the itinerary that has the smallest lexical order when read as a single string.
+
+**Intuition:** Use Eulerian path in directed graph. Use DFS with backtracking, choosing smallest lexical destination first.
+
+**Algorithm:**
+1. Build graph as adjacency list with multiset for destinations
+2. DFS from "JFK", adding destinations to result in reverse order
+3. Sort destinations for lexical order
+4. Return reversed result
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    void dfs(string airport, unordered_map<string, multiset<string>>& graph, vector<string>& result) {
+        while (!graph[airport].empty()) {
+            string next = *graph[airport].begin();
+            graph[airport].erase(graph[airport].begin());
+            dfs(next, graph, result);
+        }
+        result.push_back(airport);
+    }
+    
+    vector<string> findItinerary(vector<vector<string>>& tickets) {
+        unordered_map<string, multiset<string>> graph;
+        for (auto& ticket : tickets) {
+            graph[ticket[0]].insert(ticket[1]);
+        }
+        
+        vector<string> result;
+        dfs("JFK", graph, result);
+        reverse(result.begin(), result.end());
+        
+        return result;
+    }
+};
+```
+
+**Python Code:**
+```python
+from collections import defaultdict
+
+def find_itinerary(tickets):
+    graph = defaultdict(list)
+    for src, dst in tickets:
+        graph[src].append(dst)
+    
+    # Sort destinations for lexical order
+    for src in graph:
+        graph[src].sort(reverse=True)
+    
+    result = []
+    
+    def dfs(airport):
+        while graph[airport]:
+            dfs(graph[airport].pop())
+        result.append(airport)
+    
+    dfs("JFK")
+    return result[::-1]
+```
+
+**Complexity Analysis:**
+- Time: O(E log E) for sorting
+- Space: O(V + E)
+
+### 8.15 Minimum Height Trees
+
+**Problem Statement:** A tree is an undirected graph in which any two vertices are connected by exactly one path. In other words, any connected graph without simple cycles is a tree. Given a tree of n nodes labelled from 0 to n-1, and an array of n-1 edges where edges[i] = [ai, bi] indicates that there is an undirected edge between the two nodes ai and bi in the tree, you can choose any node of the tree as the root. When you select a node x as the root, the result tree has height h. Among all possible rooted trees, those with minimum height (i.e. min h) are called minimum height trees (MHTs). Return a list of all MHTs' root labels. You can return the answer in any order.
+
+**Intuition:** The root of MHT is the center of the tree. Use topological sort to peel leaves layer by layer until 1 or 2 nodes remain.
+
+**Algorithm:**
+1. Build adjacency list
+2. Find all leaves (nodes with degree 1)
+3. While more than 2 nodes remain:
+   - Remove current leaves
+   - Update degrees of neighbors
+   - Add new leaves to queue
+4. Return remaining nodes
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    vector<int> findMinHeightTrees(int n, vector<vector<int>>& edges) {
+        if (n == 1) return {0};
+        
+        vector<vector<int>> graph(n);
+        vector<int> degree(n, 0);
+        
+        for (auto& edge : edges) {
+            graph[edge[0]].push_back(edge[1]);
+            graph[edge[1]].push_back(edge[0]);
+            degree[edge[0]]++;
+            degree[edge[1]]++;
+        }
+        
+        queue<int> leaves;
+        for (int i = 0; i < n; ++i) {
+            if (degree[i] == 1) leaves.push(i);
+        }
+        
+        int remaining = n;
+        while (remaining > 2) {
+            int size = leaves.size();
+            remaining -= size;
+            
+            for (int i = 0; i < size; ++i) {
+                int leaf = leaves.front(); leaves.pop();
+                
+                for (int neighbor : graph[leaf]) {
+                    degree[neighbor]--;
+                    if (degree[neighbor] == 1) {
+                        leaves.push(neighbor);
+                    }
+                }
+            }
+        }
+        
+        vector<int> result;
+        while (!leaves.empty()) {
+            result.push_back(leaves.front());
+            leaves.pop();
+        }
+        
+        return result;
+    }
+};
+```
+
+**Python Code:**
+```python
+from collections import deque
+
+def find_min_height_trees(n, edges):
+    if n == 1:
+        return [0]
+    
+    graph = [[] for _ in range(n)]
+    degree = [0] * n
+    
+    for u, v in edges:
+        graph[u].append(v)
+        graph[v].append(u)
+        degree[u] += 1
+        degree[v] += 1
+    
+    leaves = deque([i for i in range(n) if degree[i] == 1])
+    remaining = n
+    
+    while remaining > 2:
+        size = len(leaves)
+        remaining -= size
+        
+        for _ in range(size):
+            leaf = leaves.popleft()
+            for neighbor in graph[leaf]:
+                degree[neighbor] -= 1
+                if degree[neighbor] == 1:
+                    leaves.append(neighbor)
+    
+    return list(leaves)
+```
+
+**Complexity Analysis:**
+- Time: O(V + E)
+- Space: O(V + E)
+
+### 8.16 Critical Connections in a Network
+
+**Problem Statement:** There are n servers numbered from 0 to n-1 connected by undirected server-to-server connections forming a network where connections[i] = [ai, bi] represents a connection between servers ai and bi. Any server can reach any other server directly or indirectly through the network. A critical connection is a connection that, if removed, will make some server unable to reach some other server. Return all critical connections in the network in any order.
+
+**Intuition:** Use Tarjan's algorithm to find bridges. Keep track of discovery time and low time for each node.
+
+**Algorithm:**
+1. Build adjacency list
+2. DFS with discovery time and low time
+3. For each edge u-v:
+   - If low[v] > disc[u], it's a bridge
+4. Return all bridges
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int time = 0;
+    vector<vector<int>> bridges;
+    
+    void dfs(int u, int parent, vector<vector<int>>& graph, vector<int>& disc, vector<int>& low, vector<bool>& visited) {
+        visited[u] = true;
+        disc[u] = low[u] = time++;
+        
+        for (int v : graph[u]) {
+            if (v == parent) continue;
+            
+            if (!visited[v]) {
+                dfs(v, u, graph, disc, low, visited);
+                low[u] = min(low[u], low[v]);
+                
+                if (low[v] > disc[u]) {
+                    bridges.push_back({u, v});
+                }
+            } else {
+                low[u] = min(low[u], disc[v]);
+            }
+        }
+    }
+    
+    vector<vector<int>> criticalConnections(int n, vector<vector<int>>& connections) {
+        vector<vector<int>> graph(n);
+        for (auto& conn : connections) {
+            graph[conn[0]].push_back(conn[1]);
+            graph[conn[1]].push_back(conn[0]);
+        }
+        
+        vector<int> disc(n, -1), low(n, -1);
+        vector<bool> visited(n, false);
+        
+        for (int i = 0; i < n; ++i) {
+            if (!visited[i]) {
+                dfs(i, -1, graph, disc, low, visited);
+            }
+        }
+        
+        return bridges;
+    }
+};
+```
+
+**Python Code:**
+```python
+def critical_connections(n, connections):
+    graph = [[] for _ in range(n)]
+    for u, v in connections:
+        graph[u].append(v)
+        graph[v].append(u)
+    
+    disc = [-1] * n
+    low = [-1] * n
+    visited = [False] * n
+    time = 0
+    bridges = []
+    
+    def dfs(u, parent):
+        nonlocal time
+        visited[u] = True
+        disc[u] = low[u] = time
+        time += 1
+        
+        for v in graph[u]:
+            if v == parent:
+                continue
+            
+            if not visited[v]:
+                dfs(v, u)
+                low[u] = min(low[u], low[v])
+                
+                if low[v] > disc[u]:
+                    bridges.append([u, v])
+            else:
+                low[u] = min(low[u], disc[v])
+    
+    for i in range(n):
+        if not visited[i]:
+            dfs(i, -1)
+    
+    return bridges
+```
+
+**Complexity Analysis:**
+- Time: O(V + E)
+- Space: O(V + E)
+
+### 8.17 Cheapest Flights Within K Stops
+
+**Problem Statement:** There are n cities connected by some number of flights. You are given an array flights where flights[i] = [fromi, toi, pricei] indicates that there is a flight from city fromi to city toi with cost pricei. You are also given three integers src, dst, and k, return the cheapest price from src to dst with at most k stops. If there is no such route, return -1.
+
+**Intuition:** Modified Dijkstra with stops constraint. Use priority queue with (cost, city, stops).
+
+**Algorithm:**
+1. Build graph as adjacency list
+2. Priority queue: (cost, city, stops)
+3. dist[city] tracks minimum cost to reach city
+4. If stops <= k and cost < dist[city], update and continue
+5. Return dist[dst] or -1
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int findCheapestPrice(int n, vector<vector<int>>& flights, int src, int dst, int k) {
+        vector<vector<pair<int, int>>> graph(n);
+        for (auto& flight : flights) {
+            graph[flight[0]].push_back({flight[1], flight[2]});
+        }
+        
+        vector<int> dist(n, INT_MAX);
+        dist[src] = 0;
+        
+        // priority queue: (cost, city, stops)
+        using T = tuple<int, int, int>;
+        priority_queue<T, vector<T>, greater<T>> pq;
+        pq.push({0, src, 0});
+        
+        while (!pq.empty()) {
+            auto [cost, city, stops] = pq.top(); pq.pop();
+            
+            if (city == dst) return cost;
+            if (stops > k) continue;
+            
+            for (auto& [next, price] : graph[city]) {
+                int newCost = cost + price;
+                if (newCost < dist[next]) {
+                    dist[next] = newCost;
+                    pq.push({newCost, next, stops + 1});
+                }
+            }
+        }
+        
+        return -1;
+    }
+};
+```
+
+**Python Code:**
+```python
+import heapq
+
+def find_cheapest_price(n, flights, src, dst, k):
+    graph = [[] for _ in range(n)]
+    for u, v, price in flights:
+        graph[u].append((v, price))
+    
+    dist = [float('inf')] * n
+    dist[src] = 0
+    
+    # (cost, city, stops)
+    pq = [(0, src, 0)]
+    
+    while pq:
+        cost, city, stops = heapq.heappop(pq)
+        
+        if city == dst:
+            return cost
+        if stops > k:
+            continue
+        
+        for next_city, price in graph[city]:
+            new_cost = cost + price
+            if new_cost < dist[next_city]:
+                dist[next_city] = new_cost
+                heapq.heappush(pq, (new_cost, next_city, stops + 1))
+    
+    return -1
+```
+
+**Complexity Analysis:**
+- Time: O((V + E) log V)
+- Space: O(V + E)
+
+### 8.18 Path with Maximum Probability
+
+**Problem Statement:** You are given an undirected graph with n nodes (0-indexed) and m edges, where each edge has a probability of success. You start at node 0 and need to reach node n-1, and you want to find the path with the maximum probability of success. Return the probability of the path with the maximum probability, or 0 if no path exists.
+
+**Intuition:** Use Dijkstra with maximum probability instead of minimum distance. Use priority queue with probability.
+
+**Algorithm:**
+1. Build graph with probabilities
+2. Priority queue: (probability, node)
+3. prob[node] tracks maximum probability to reach node
+4. Update if higher probability found
+5. Return prob[n-1]
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    double maxProbability(int n, vector<vector<int>>& edges, vector<double>& succProb, int start, int end) {
+        vector<vector<pair<int, double>>> graph(n);
+        for (int i = 0; i < edges.size(); ++i) {
+            int u = edges[i][0], v = edges[i][1];
+            double p = succProb[i];
+            graph[u].push_back({v, p});
+            graph[v].push_back({u, p});
+        }
+        
+        vector<double> prob(n, 0.0);
+        prob[start] = 1.0;
+        
+        // priority queue: (probability, node)
+        using T = pair<double, int>;
+        priority_queue<T> pq;
+        pq.push({1.0, start});
+        
+        while (!pq.empty()) {
+            auto [currProb, node] = pq.top(); pq.pop();
+            
+            if (currProb < prob[node]) continue;
+            
+            for (auto& [next, edgeProb] : graph[node]) {
+                double newProb = currProb * edgeProb;
+                if (newProb > prob[next]) {
+                    prob[next] = newProb;
+                    pq.push({newProb, next});
+                }
+            }
+        }
+        
+        return prob[end];
+    }
+};
+```
+
+**Python Code:**
+```python
+import heapq
+
+def max_probability(n, edges, succ_prob, start, end):
+    graph = [[] for _ in range(n)]
+    for i, (u, v) in enumerate(edges):
+        p = succ_prob[i]
+        graph[u].append((v, p))
+        graph[v].append((u, p))
+    
+    prob = [0.0] * n
+    prob[start] = 1.0
+    
+    # (probability, node) - max heap
+    pq = [(-1.0, start)]
+    
+    while pq:
+        curr_prob, node = heapq.heappop(pq)
+        curr_prob = -curr_prob
+        
+        if curr_prob < prob[node]:
+            continue
+        
+        for next_node, edge_prob in graph[node]:
+            new_prob = curr_prob * edge_prob
+            if new_prob > prob[next_node]:
+                prob[next_node] = new_prob
+                heapq.heappush(pq, (-new_prob, next_node))
+    
+    return prob[end]
+```
+
+**Complexity Analysis:**
+- Time: O((V + E) log V)
+- Space: O(V + E)
+
+### 8.19 Find the City With the Smallest Number of Neighbors
+
+**Problem Statement:** There are n cities numbered from 0 to n-1. Given the array edges where edges[i] = [fromi, toi, weighti] represents a bidirectional and weighted edge between cities fromi and toi, and given the integer distanceThreshold. A city is reachable from another city if the total distance of the path between them is at most distanceThreshold. Return the city with the smallest number of cities that are reachable through some path and whose distance is at most distanceThreshold, If there are multiple answers, return the city with the greatest number.
+
+**Intuition:** For each city, run Dijkstra to count cities within distance threshold. Track city with minimum count.
+
+**Algorithm:**
+1. Build graph
+2. For each city as source:
+   - Run Dijkstra to find distances
+   - Count cities with distance <= threshold
+3. Track city with minimum count (break ties by largest city number)
+4. Return that city
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int findTheCity(int n, vector<vector<int>>& edges, int distanceThreshold) {
+        vector<vector<pair<int, int>>> graph(n);
+        for (auto& edge : edges) {
+            graph[edge[0]].push_back({edge[1], edge[2]});
+            graph[edge[1]].push_back({edge[0], edge[2]});
+        }
+        
+        auto dijkstra = [&](int start) {
+            vector<int> dist(n, INT_MAX);
+            dist[start] = 0;
+            priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+            pq.push({0, start});
+            
+            while (!pq.empty()) {
+                auto [cost, node] = pq.top(); pq.pop();
+                if (cost > dist[node]) continue;
+                
+                for (auto& [next, weight] : graph[node]) {
+                    int newCost = cost + weight;
+                    if (newCost < dist[next]) {
+                        dist[next] = newCost;
+                        pq.push({newCost, next});
+                    }
+                }
+            }
+            
+            int count = 0;
+            for (int d : dist) {
+                if (d <= distanceThreshold) count++;
+            }
+            return count;
+        };
+        
+        int minCount = INT_MAX, result = -1;
+        for (int i = 0; i < n; ++i) {
+            int count = dijkstra(i);
+            if (count <= minCount) {
+                minCount = count;
+                result = i;
+            }
+        }
+        
+        return result;
+    }
+};
+```
+
+**Python Code:**
+```python
+import heapq
+
+def find_the_city(n, edges, distance_threshold):
+    graph = [[] for _ in range(n)]
+    for u, v, w in edges:
+        graph[u].append((v, w))
+        graph[v].append((u, w))
+    
+    def dijkstra(start):
+        dist = [float('inf')] * n
+        dist[start] = 0
+        pq = [(0, start)]
+        
+        while pq:
+            cost, node = heapq.heappop(pq)
+            if cost > dist[node]:
+                continue
+            
+            for next_node, weight in graph[node]:
+                new_cost = cost + weight
+                if new_cost < dist[next_node]:
+                    dist[next_node] = new_cost
+                    heapq.heappush(pq, (new_cost, next_node))
+        
+        count = sum(1 for d in dist if d <= distance_threshold)
+        return count
+    
+    min_count = float('inf')
+    result = -1
+    
+    for i in range(n):
+        count = dijkstra(i)
+        if count <= min_count:
+            min_count = count
+            result = i
+    
+    return result
+```
+
+**Complexity Analysis:**
+- Time: O(n * (V + E) log V)
+- Space: O(V + E)
+
+### 8.20 Evaluate Division
+
+**Problem Statement:** You are given an array of variable pairs equations and an array of real numbers values, where equations[i] = [Ai, Bi] and values[i] represent the equation Ai / Bi = values[i]. You are also given some queries, where queries[j] = [Cj, Dj] represents the jth query to find the answer for Cj / Dj = ?. Return the answers to all queries. If a single answer cannot be determined, return -1.0.
+
+**Intuition:** Build graph where variables are nodes and division relationships are weighted edges. Use DFS/BFS to find paths between query variables.
+
+**Algorithm:**
+1. Build graph with bidirectional edges (A->B: val, B->A: 1/val)
+2. For each query [C,D]:
+   - If C or D not in graph, return -1
+   - DFS from C to D, multiplying edge weights
+3. Return results
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    double dfs(string start, string end, unordered_map<string, vector<pair<string, double>>>& graph, unordered_set<string>& visited) {
+        if (start == end) return 1.0;
+        visited.insert(start);
+        
+        for (auto& [next, val] : graph[start]) {
+            if (visited.find(next) == visited.end()) {
+                double res = dfs(next, end, graph, visited);
+                if (res != -1.0) return res * val;
+            }
+        }
+        
+        return -1.0;
+    }
+    
+    vector<double> calcEquation(vector<vector<string>>& equations, vector<double>& values, vector<vector<string>>& queries) {
+        unordered_map<string, vector<pair<string, double>>> graph;
+        
+        for (int i = 0; i < equations.size(); ++i) {
+            string a = equations[i][0], b = equations[i][1];
+            double val = values[i];
+            graph[a].push_back({b, val});
+            graph[b].push_back({a, 1.0 / val});
+        }
+        
+        vector<double> result;
+        for (auto& query : queries) {
+            string start = query[0], end = query[1];
+            if (graph.find(start) == graph.end() || graph.find(end) == graph.end()) {
+                result.push_back(-1.0);
+            } else {
+                unordered_set<string> visited;
+                result.push_back(dfs(start, end, graph, visited));
+            }
+        }
+        
+        return result;
+    }
+};
+```
+
+**Python Code:**
+```python
+def calc_equation(equations, values, queries):
+    graph = {}
+    
+    for (a, b), val in zip(equations, values):
+        if a not in graph:
+            graph[a] = []
+        if b not in graph:
+            graph[b] = []
+        graph[a].append((b, val))
+        graph[b].append((a, 1.0 / val))
+    
+    def dfs(start, end, visited):
+        if start == end:
+            return 1.0
+        visited.add(start)
+        
+        for next_node, val in graph.get(start, []):
+            if next_node not in visited:
+                res = dfs(next_node, end, visited)
+                if res != -1.0:
+                    return res * val
+        
+        return -1.0
+    
+    result = []
+    for start, end in queries:
+        if start not in graph or end not in graph:
+            result.append(-1.0)
+        else:
+            visited = set()
+            result.append(dfs(start, end, visited))
+    
+    return result
+```
+
+**Complexity Analysis:**
+- Time: O(Q * (V + E))
+- Space: O(V + E)
+
+### 8.21 Optimize Water Distribution
+
+**Problem Statement:** There are n houses in a village. We want to supply water for all the houses by building wells and laying pipes between the houses. For each house i, we can either build a well inside it directly with cost wells[i-1], or pipe in water from another house with the cost of the pipe between them. Return the minimum total cost to supply water to all houses.
+
+**Intuition:** This is a minimum spanning tree problem. Treat wells as edges from a virtual node to each house.
+
+**Algorithm:**
+1. Create virtual node 0, add edges from 0 to each house with cost wells[i-1]
+2. Add all pipe edges
+3. Run Kruskal's algorithm to find MST
+4. Return total cost of MST
+
+**C++ Code:**
+```cpp
+class UnionFind {
+public:
+    vector<int> parent, rank;
+    UnionFind(int size) {
+        parent.resize(size);
+        rank.resize(size, 0);
+        for (int i = 0; i < size; ++i) parent[i] = i;
+    }
+    
+    int find(int x) {
+        if (parent[x] != x) parent[x] = find(parent[x]);
+        return parent[x];
+    }
+    
+    bool unite(int x, int y) {
+        int px = find(x), py = find(y);
+        if (px == py) return false;
+        if (rank[px] < rank[py]) parent[px] = py;
+        else if (rank[px] > rank[py]) parent[py] = px;
+        else {
+            parent[py] = px;
+            rank[px]++;
+        }
+        return true;
+    }
+};
+
+class Solution {
+public:
+    int minCostToSupplyWater(int n, vector<int>& wells, vector<vector<int>>& pipes) {
+        vector<vector<int>> edges;
+        
+        // Add well edges from virtual node 0
+        for (int i = 1; i <= n; ++i) {
+            edges.push_back({0, i, wells[i-1]});
+        }
+        
+        // Add pipe edges
+        for (auto& pipe : pipes) {
+            edges.push_back({pipe[0], pipe[1], pipe[2]});
+        }
+        
+        // Sort edges by cost
+        sort(edges.begin(), edges.end(), [](const vector<int>& a, const vector<int>& b) {
+            return a[2] < b[2];
+        });
+        
+        UnionFind uf(n + 1);
+        int totalCost = 0;
+        
+        for (auto& edge : edges) {
+            if (uf.unite(edge[0], edge[1])) {
+                totalCost += edge[2];
+            }
+        }
+        
+        return totalCost;
+    }
+};
+```
+
+**Python Code:**
+```python
+class UnionFind:
+    def __init__(self, size):
+        self.parent = list(range(size))
+        self.rank = [0] * size
+    
+    def find(self, x):
+        if self.parent[x] != x:
+            self.parent[x] = self.find(self.parent[x])
+        return self.parent[x]
+    
+    def unite(self, x, y):
+        px, py = self.find(x), self.find(y)
+        if px == py:
+            return False
+        if self.rank[px] < self.rank[py]:
+            self.parent[px] = py
+        elif self.rank[px] > self.rank[py]:
+            self.parent[py] = px
+        else:
+            self.parent[py] = px
+            self.rank[px] += 1
+        return True
+
+def min_cost_to_supply_water(n, wells, pipes):
+    edges = []
+    
+    # Add well edges from virtual node 0
+    for i in range(1, n + 1):
+        edges.append((0, i, wells[i-1]))
+    
+    # Add pipe edges
+    for u, v, cost in pipes:
+        edges.append((u, v, cost))
+    
+    # Sort by cost
+    edges.sort(key=lambda x: x[2])
+    
+    uf = UnionFind(n + 1)
+    total_cost = 0
+    
+    for u, v, cost in edges:
+        if uf.unite(u, v):
+            total_cost += cost
+    
+    return total_cost
+```
+
+**Complexity Analysis:**
+- Time: O(E log E)
+- Space: O(V + E)
+
+### 8.22 Bus Routes
+
+**Problem Statement:** You are given an array routes representing bus routes where routes[i] is a bus route that the i-th bus repeats forever. For example, if routes[0] = [1, 5, 7], this means that the 0-th bus travels in the sequence 1 -> 5 -> 7 -> 1 -> 5 -> 7 -> ... forever. You will start at the bus stop source (You are not on any bus initially), and you want to go to the bus stop target. You can get on and off the buses at any time. You also cannot travel between bus stops on foot. Return the least number of buses you must take to travel from source to target. Return -1 if it is impossible.
+
+**Intuition:** Model as graph where bus routes are nodes, stops are connections. BFS where each level represents one bus change.
+
+**Algorithm:**
+1. Build stop -> routes mapping
+2. BFS: queue contains (current stop, buses taken)
+3. For each stop, try all routes that pass through it
+4. Mark visited routes to avoid cycles
+5. Return buses when reach target
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int numBusesToDestination(vector<vector<int>>& routes, int source, int target) {
+        if (source == target) return 0;
+        
+        unordered_map<int, vector<int>> stopToRoutes;
+        for (int i = 0; i < routes.size(); ++i) {
+            for (int stop : routes[i]) {
+                stopToRoutes[stop].push_back(i);
+            }
+        }
+        
+        queue<pair<int, int>> q; // (current stop, buses taken)
+        q.push({source, 0});
+        unordered_set<int> visitedStops;
+        unordered_set<int> visitedRoutes;
+        visitedStops.insert(source);
+        
+        while (!q.empty()) {
+            auto [stop, buses] = q.front(); q.pop();
+            
+            for (int route : stopToRoutes[stop]) {
+                if (visitedRoutes.count(route)) continue;
+                visitedRoutes.insert(route);
+                
+                for (int nextStop : routes[route]) {
+                    if (nextStop == target) return buses + 1;
+                    if (visitedStops.count(nextStop) == 0) {
+                        visitedStops.insert(nextStop);
+                        q.push({nextStop, buses + 1});
+                    }
+                }
+            }
+        }
+        
+        return -1;
+    }
+};
+```
+
+**Python Code:**
+```python
+from collections import deque, defaultdict
+
+def num_buses_to_destination(routes, source, target):
+    if source == target:
+        return 0
+    
+    stop_to_routes = defaultdict(list)
+    for i, route in enumerate(routes):
+        for stop in route:
+            stop_to_routes[stop].append(i)
+    
+    queue = deque([(source, 0)])  # (stop, buses)
+    visited_stops = set([source])
+    visited_routes = set()
+    
+    while queue:
+        stop, buses = queue.popleft()
+        
+        for route_idx in stop_to_routes[stop]:
+            if route_idx in visited_routes:
+                continue
+            visited_routes.add(route_idx)
+            
+            for next_stop in routes[route_idx]:
+                if next_stop == target:
+                    return buses + 1
+                if next_stop not in visited_stops:
+                    visited_stops.add(next_stop)
+                    queue.append((next_stop, buses + 1))
+    
+    return -1
+```
+
+**Complexity Analysis:**
+- Time: O(R * S) where R = routes, S = stops per route
+- Space: O(R * S)
+
+### 8.23 All Paths from Source to Target
+
+**Problem Statement:** Given a directed acyclic graph (DAG) of n nodes labeled from 0 to n - 1, find all possible paths from node 0 to node n - 1, and return them in any order. The graph is given as follows: graph[i] is a list of all nodes you can visit from node i (i.e., there is a directed edge from node i to node graph[i][j]).
+
+**Intuition:** DFS with backtracking to explore all paths from source to target.
+
+**Algorithm:**
+1. DFS function with current path
+2. When reach target, add path to result
+3. For each neighbor, recurse with updated path
+4. Backtrack by removing last node
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    void dfs(int node, int target, vector<vector<int>>& graph, vector<int>& path, vector<vector<int>>& result) {
+        path.push_back(node);
+        
+        if (node == target) {
+            result.push_back(path);
+        } else {
+            for (int next : graph[node]) {
+                dfs(next, target, graph, path, result);
+            }
+        }
+        
+        path.pop_back();
+    }
+    
+    vector<vector<int>> allPathsSourceTarget(vector<vector<int>>& graph) {
+        vector<vector<int>> result;
+        vector<int> path;
+        dfs(0, graph.size() - 1, graph, path, result);
+        return result;
+    }
+};
+```
+
+**Python Code:**
+```python
+def all_paths_source_target(graph):
+    def dfs(node, target, path, result):
+        path.append(node)
+        
+        if node == target:
+            result.append(path[:])
+        else:
+            for next_node in graph[node]:
+                dfs(next_node, target, path, result)
+        
+        path.pop()
+    
+    result = []
+    dfs(0, len(graph) - 1, [], result)
+    return result
+```
+
+**Complexity Analysis:**
+- Time: O(2^V) worst case
+- Space: O(V)
+
+### 8.24 Shortest Path in Binary Matrix
+
+**Problem Statement:** Given an n x n binary matrix grid, return the length of the shortest clear path in the matrix. If there is no clear path, return -1. A clear path in a binary matrix is a path from the top-left cell (i.e., (0, 0)) to the bottom-right cell (i.e., (n-1, n-1)) such that all the visited cells are 0 and all adjacent cells are 8-directionally connected.
+
+**Intuition:** BFS from (0,0) to (n-1,n-1), exploring all 8 directions. Each step increases path length by 1.
+
+**Algorithm:**
+1. If grid[0][0] == 1 or grid[n-1][n-1] == 1, return -1
+2. BFS queue: (i, j, steps)
+3. Mark visited cells
+4. Explore 8 directions
+5. Return steps when reach (n-1, n-1)
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int shortestPathBinaryMatrix(vector<vector<int>>& grid) {
+        int n = grid.size();
+        if (grid[0][0] == 1 || grid[n-1][n-1] == 1) return -1;
+        
+        vector<vector<int>> directions = {{-1,-1}, {-1,0}, {-1,1}, {0,-1}, {0,1}, {1,-1}, {1,0}, {1,1}};
+        queue<vector<int>> q; // {i, j, steps}
+        q.push({0, 0, 1});
+        grid[0][0] = 1; // mark visited
+        
+        while (!q.empty()) {
+            auto curr = q.front(); q.pop();
+            int i = curr[0], j = curr[1], steps = curr[2];
+            
+            if (i == n-1 && j == n-1) return steps;
+            
+            for (auto& dir : directions) {
+                int ni = i + dir[0], nj = j + dir[1];
+                if (ni >= 0 && ni < n && nj >= 0 && nj < n && grid[ni][nj] == 0) {
+                    grid[ni][nj] = 1; // mark visited
+                    q.push({ni, nj, steps + 1});
+                }
+            }
+        }
+        
+        return -1;
+    }
+};
+```
+
+**Python Code:**
+```python
+from collections import deque
+
+def shortest_path_binary_matrix(grid):
+    n = len(grid)
+    if grid[0][0] == 1 or grid[n-1][n-1] == 1:
+        return -1
+    
+    directions = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
+    queue = deque([(0, 0, 1)])  # (i, j, steps)
+    grid[0][0] = 1  # mark visited
+    
+    while queue:
+        i, j, steps = queue.popleft()
+        
+        if i == n-1 and j == n-1:
+            return steps
+        
+        for di, dj in directions:
+            ni, nj = i + di, j + dj
+            if 0 <= ni < n and 0 <= nj < n and grid[ni][nj] == 0:
+                grid[ni][nj] = 1  # mark visited
+                queue.append((ni, nj, steps + 1))
+    
+    return -1
+```
+
+**Complexity Analysis:**
+- Time: O(n²)
+- Space: O(n²)
+
+### 8.25 As Far from Land as Possible
+
+**Problem Statement:** Given an n x n grid containing only values 0 and 1, where 0 represents water and 1 represents land, find a water cell such that its distance to the nearest land cell is maximized, and return the distance. If no land or no water exists in the grid, return -1.
+
+**Intuition:** Multi-source BFS from all land cells. The last cell visited will have maximum distance.
+
+**Algorithm:**
+1. BFS queue with all land cells (distance 0)
+2. Mark visited land cells
+3. BFS to find maximum distance to water cells
+4. Return maximum distance
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int maxDistance(vector<vector<int>>& grid) {
+        int n = grid.size();
+        queue<pair<int, int>> q;
+        vector<vector<bool>> visited(n, vector<bool>(n, false));
+        
+        // Add all land cells to queue
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (grid[i][j] == 1) {
+                    q.push({i, j});
+                    visited[i][j] = true;
+                }
+            }
+        }
+        
+        if (q.size() == 0 || q.size() == n * n) return -1;
+        
+        vector<pair<int, int>> directions = {{-1,0}, {1,0}, {0,-1}, {0,1}};
+        int distance = -1;
+        
+        while (!q.empty()) {
+            int size = q.size();
+            distance++;
+            
+            for (int k = 0; k < size; ++k) {
+                auto [i, j] = q.front(); q.pop();
+                
+                for (auto& dir : directions) {
+                    int ni = i + dir.first, nj = j + dir.second;
+                    if (ni >= 0 && ni < n && nj >= 0 && nj < n && !visited[ni][nj]) {
+                        visited[ni][nj] = true;
+                        q.push({ni, nj});
+                    }
+                }
+            }
+        }
+        
+        return distance;
+    }
+};
+```
+
+**Python Code:**
+```python
+from collections import deque
+
+def max_distance(grid):
+    n = len(grid)
+    queue = deque()
+    visited = [[False] * n for _ in range(n)]
+    
+    # Add all land cells
+    for i in range(n):
+        for j in range(n):
+            if grid[i][j] == 1:
+                queue.append((i, j))
+                visited[i][j] = True
+    
+    if not queue or len(queue) == n * n:
+        return -1
+    
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    distance = -1
+    
+    while queue:
+        size = len(queue)
+        distance += 1
+        
+        for _ in range(size):
+            i, j = queue.popleft()
+            
+            for di, dj in directions:
+                ni, nj = i + di, j + dj
+                if 0 <= ni < n and 0 <= nj < n and not visited[ni][nj]:
+                    visited[ni][nj] = True
+                    queue.append((ni, nj))
+    
+    return distance
+```
+
+**Complexity Analysis:**
+- Time: O(n²)
+- Space: O(n²)
+
+### 8.26 Making A Large Island
+
+**Problem Statement:** You are given an n x n binary matrix grid. You are allowed to change at most one 0 to be 1. Return the size of the largest island in grid after applying this operation. An island is a 4-directionally connected group of 1's.
+
+**Intuition:** Find all islands and their sizes. For each 0, check adjacent islands and calculate potential size.
+
+**Algorithm:**
+1. DFS to find all islands and their sizes
+2. For each 0, check 4 directions for adjacent islands
+3. Calculate total size if we flip this 0
+4. Return maximum size
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int dfs(int i, int j, vector<vector<int>>& grid, int id) {
+        if (i < 0 || i >= grid.size() || j < 0 || j >= grid[0].size() || grid[i][j] != 1) return 0;
+        grid[i][j] = id;
+        return 1 + dfs(i+1, j, grid, id) + dfs(i-1, j, grid, id) + dfs(i, j+1, grid, id) + dfs(i, j-1, grid, id);
+    }
+    
+    int largestIsland(vector<vector<int>>& grid) {
+        int n = grid.size();
+        unordered_map<int, int> islandSize;
+        int id = 2;
+        
+        // Find all islands
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (grid[i][j] == 1) {
+                    islandSize[id] = dfs(i, j, grid, id);
+                    id++;
+                }
+            }
+        }
+        
+        if (islandSize.empty()) return 1;
+        
+        int maxSize = 0;
+        for (auto& p : islandSize) maxSize = max(maxSize, p.second);
+        
+        // Check each 0
+        vector<pair<int, int>> directions = {{-1,0}, {1,0}, {0,-1}, {0,1}};
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (grid[i][j] == 0) {
+                    unordered_set<int> adjacentIslands;
+                    for (auto& dir : directions) {
+                        int ni = i + dir.first, nj = j + dir.second;
+                        if (ni >= 0 && ni < n && nj >= 0 && nj < n && grid[ni][nj] > 1) {
+                            adjacentIslands.insert(grid[ni][nj]);
+                        }
+                    }
+                    
+                    int total = 1; // the flipped 0
+                    for (int islandId : adjacentIslands) {
+                        total += islandSize[islandId];
+                    }
+                    maxSize = max(maxSize, total);
+                }
+            }
+        }
+        
+        return maxSize;
+    }
+};
+```
+
+**Python Code:**
+```python
+def largest_island(grid):
+    n = len(grid)
+    island_size = {}
+    island_id = 2
+    
+    def dfs(i, j, id_val):
+        if i < 0 or i >= n or j < 0 or j >= n or grid[i][j] != 1:
+            return 0
+        grid[i][j] = id_val
+        return 1 + dfs(i+1, j, id_val) + dfs(i-1, j, id_val) + dfs(i, j+1, id_val) + dfs(i, j-1, id_val)
+    
+    # Find all islands
+    for i in range(n):
+        for j in range(n):
+            if grid[i][j] == 1:
+                island_size[island_id] = dfs(i, j, island_id)
+                island_id += 1
+    
+    if not island_size:
+        return 1
+    
+    max_size = max(island_size.values())
+    
+    # Check each 0
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    for i in range(n):
+        for j in range(n):
+            if grid[i][j] == 0:
+                adjacent = set()
+                for di, dj in directions:
+                    ni, nj = i + di, j + dj
+                    if 0 <= ni < n and 0 <= nj < n and grid[ni][nj] > 1:
+                        adjacent.add(grid[ni][nj])
+                
+                total = 1  # flipped 0
+                for island_id in adjacent:
+                    total += island_size[island_id]
+                max_size = max(max_size, total)
+    
+    return max_size
+```
+
+**Complexity Analysis:**
+- Time: O(n²)
+- Space: O(n²)
+
+### 8.27 Detonate the Maximum Bombs
+
+**Problem Statement:** You are given a list of bombs. The range of a bomb is defined as the area where its effect can be felt. This area is in the shape of a circle with the center as the location of the bomb. The bombs are represented by a 0-indexed 2D integer array bombs where bombs[i] = [x_i, y_i, r_i]. x_i and y_i denote the X-coordinate and Y-coordinate of the center of the i-th bomb, and r_i denotes the radius of its range. You may choose to detonate a single bomb. When a bomb is detonated, it will detonate all bombs that lie in its range. These bombs will further detonate the bombs that lie in their ranges. Return the maximum number of bombs that can be detonated in the explosion.
+
+**Intuition:** Build graph where edge exists if one bomb can detonate another. DFS/BFS from each bomb to find maximum connected component.
+
+**Algorithm:**
+1. Build directed graph: i -> j if bomb i can reach bomb j
+2. For each bomb, DFS to count reachable bombs
+3. Return maximum count
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    void dfs(int node, vector<vector<int>>& graph, vector<bool>& visited, int& count) {
+        visited[node] = true;
+        count++;
+        
+        for (int next : graph[node]) {
+            if (!visited[next]) {
+                dfs(next, graph, visited, count);
+            }
+        }
+    }
+    
+    int maximumDetonation(vector<vector<int>>& bombs) {
+        int n = bombs.size();
+        vector<vector<int>> graph(n);
+        
+        // Build graph
+        for (int i = 0; i < n; ++i) {
+            long long x1 = bombs[i][0], y1 = bombs[i][1], r1 = bombs[i][2];
+            for (int j = 0; j < n; ++j) {
+                if (i == j) continue;
+                long long x2 = bombs[j][0], y2 = bombs[j][1];
+                long long dist = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+                if (dist <= r1 * r1) {
+                    graph[i].push_back(j);
+                }
+            }
+        }
+        
+        int maxDetonated = 0;
+        for (int i = 0; i < n; ++i) {
+            vector<bool> visited(n, false);
+            int count = 0;
+            dfs(i, graph, visited, count);
+            maxDetonated = max(maxDetonated, count);
+        }
+        
+        return maxDetonated;
+    }
+};
+```
+
+**Python Code:**
+```python
+def maximum_detonation(bombs):
+    n = len(bombs)
+    graph = [[] for _ in range(n)]
+    
+    # Build graph
+    for i in range(n):
+        x1, y1, r1 = bombs[i]
+        for j in range(n):
+            if i == j:
+                continue
+            x2, y2, _ = bombs[j]
+            dist = (x1 - x2) ** 2 + (y1 - y2) ** 2
+            if dist <= r1 ** 2:
+                graph[i].append(j)
+    
+    def dfs(node, visited):
+        visited.add(node)
+        count = 1
+        
+        for next_node in graph[node]:
+            if next_node not in visited:
+                count += dfs(next_node, visited)
+        
+        return count
+    
+    max_detonated = 0
+    for i in range(n):
+        visited = set()
+        count = dfs(i, visited)
+        max_detonated = max(max_detonated, count)
+    
+    return max_detonated
+```
+
+**Complexity Analysis:**
+- Time: O(n²)
+- Space: O(n²)
+
+### 8.28 Find All People With Secret
+
+**Problem Statement:** You are given an integer n indicating there are n people numbered from 0 to n-1. You are also given a 0-indexed 2D integer array meetings where meetings[i] = [xi, yi, time_i] denotes a meeting at time_i between person xi and person yi. All the meetings are sorted in ascending order of time_i. A person may attend multiple meetings at the same time. When a person attends a meeting, they share the secret with everyone else who attends the same meeting. The secret is shared transitively, so if person A shares with person B, and person B shares with person C, then person A also shares with person C through person B. You are given an integer firstPerson, and you want to find all the people who have the secret after all the meetings have happened. Note that person 0 always has the secret initially.
+
+**Intuition:** Process meetings in time order. For each time slot, build graph of meetings and find connected components with secret.
+
+**Algorithm:**
+1. Sort meetings by time
+2. Group meetings by time
+3. For each time group:
+   - Build graph of people meeting
+   - Find connected components
+   - If component contains person with secret, all get secret
+4. Return all people with secret
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    vector<int> findAllPeople(int n, vector<vector<int>>& meetings, int firstPerson) {
+        sort(meetings.begin(), meetings.end(), [](const vector<int>& a, const vector<int>& b) {
+            return a[2] < b[2];
+        });
+        
+        vector<bool> hasSecret(n, false);
+        hasSecret[0] = true;
+        hasSecret[firstPerson] = true;
+        
+        int i = 0;
+        while (i < meetings.size()) {
+            int time = meetings[i][2];
+            unordered_map<int, vector<int>> graph;
+            unordered_set<int> people;
+            
+            // Collect all meetings at this time
+            while (i < meetings.size() && meetings[i][2] == time) {
+                int p1 = meetings[i][0], p2 = meetings[i][1];
+                graph[p1].push_back(p2);
+                graph[p2].push_back(p1);
+                people.insert(p1);
+                people.insert(p2);
+                i++;
+            }
+            
+            // Find connected components
+            vector<bool> visited(n, false);
+            for (int person : people) {
+                if (visited[person]) continue;
+                
+                // DFS to find component
+                vector<int> component;
+                queue<int> q;
+                q.push(person);
+                visited[person] = true;
+                bool hasSecretPerson = hasSecret[person];
+                
+                while (!q.empty()) {
+                    int p = q.front(); q.pop();
+                    component.push_back(p);
+                    
+                    for (int next : graph[p]) {
+                        if (!visited[next]) {
+                            visited[next] = true;
+                            q.push(next);
+                            if (hasSecret[next]) hasSecretPerson = true;
+                        }
+                    }
+                }
+                
+                // If component has secret, all get it
+                if (hasSecretPerson) {
+                    for (int p : component) {
+                        hasSecret[p] = true;
+                    }
+                }
+            }
+        }
+        
+        vector<int> result;
+        for (int i = 0; i < n; ++i) {
+            if (hasSecret[i]) result.push_back(i);
+        }
+        
+        return result;
+    }
+};
+```
+
+**Python Code:**
+```python
+from collections import defaultdict, deque
+
+def find_all_people(n, meetings, first_person):
+    meetings.sort(key=lambda x: x[2])
+    
+    has_secret = [False] * n
+    has_secret[0] = True
+    has_secret[first_person] = True
+    
+    i = 0
+    while i < len(meetings):
+        time = meetings[i][2]
+        graph = defaultdict(list)
+        people = set()
+        
+        # Collect meetings at this time
+        while i < len(meetings) and meetings[i][2] == time:
+            p1, p2, _ = meetings[i]
+            graph[p1].append(p2)
+            graph[p2].append(p1)
+            people.add(p1)
+            people.add(p2)
+            i += 1
+        
+        # Find connected components
+        visited = [False] * n
+        for person in people:
+            if visited[person]:
+                continue
+            
+            # BFS to find component
+            component = []
+            queue = deque([person])
+            visited[person] = True
+            has_secret_person = has_secret[person]
+            
+            while queue:
+                p = queue.popleft()
+                component.append(p)
+                
+                for next_p in graph[p]:
+                    if not visited[next_p]:
+                        visited[next_p] = True
+                        queue.append(next_p)
+                        if has_secret[next_p]:
+                            has_secret_person = True
+            
+            # Share secret
+            if has_secret_person:
+                for p in component:
+                    has_secret[p] = True
+    
+    return [i for i in range(n) if has_secret[i]]
+```
+
+**Complexity Analysis:**
+- Time: O(M log M + M * α(N)) where M = meetings
+- Space: O(N + M)
+
+### 8.29 Throne Inheritance
+
+**Problem Statement:** A kingdom consists of a king, his children, his grandchildren, and so on. Every once in a while, someone in the family dies. The kingdom decides who the next king will be based on the following rules: The current king dies. Among the king's children, the eldest son becomes the next king. If the king had no children, the next eldest sibling of the king becomes the next king. If the king had no siblings, the next eldest child of the king's parent becomes the next king. And so on. For example, if the king has an eldest son who has an eldest son, that grandson becomes the next king. Given a king's name, the structure of the kingdom, and the people who have died, please find the name of the next king.
+
+**Intuition:** Build tree structure. When king dies, find next in line using DFS preorder traversal, skipping dead people.
+
+**Algorithm:**
+1. Build tree: parent -> children
+2. Mark dead people
+3. DFS from king to find next alive person in succession order
+4. Return first alive person found
+
+**C++ Code:**
+```cpp
+class ThroneInheritance {
+public:
+    unordered_map<string, vector<string>> children;
+    unordered_set<string> dead;
+    string king;
+    
+    ThroneInheritance(string kingName) {
+        king = kingName;
+    }
+    
+    void birth(string parentName, string childName) {
+        children[parentName].push_back(childName);
+    }
+    
+    void death(string name) {
+        dead.insert(name);
+    }
+    
+    vector<string> getInheritanceOrder() {
+        vector<string> order;
+        function<void(string)> dfs = [&](string person) {
+            if (dead.find(person) == dead.end()) {
+                order.push_back(person);
+            }
+            for (string child : children[person]) {
+                dfs(child);
+            }
+        };
+        dfs(king);
+        return order;
+    }
+    
+    string getNextKing() {
+        function<string(string)> findNext = [&](string person) -> string {
+            if (dead.find(person) == dead.end()) {
+                return person;
+            }
+            for (string child : children[person]) {
+                string next = findNext(child);
+                if (!next.empty()) return next;
+            }
+            return "";
+        };
+        
+        // Start from king's children
+        for (string child : children[king]) {
+            string next = findNext(child);
+            if (!next.empty()) return next;
+        }
+        
+        return ""; // Should not happen
+    }
+};
+```
+
+**Python Code:**
+```python
+class ThroneInheritance:
+    def __init__(self, kingName):
+        self.king = kingName
+        self.children = defaultdict(list)
+        self.dead = set()
+    
+    def birth(self, parentName, childName):
+        self.children[parentName].append(childName)
+    
+    def death(self, name):
+        self.dead.add(name)
+    
+    def get_inheritance_order(self):
+        order = []
+        
+        def dfs(person):
+            if person not in self.dead:
+                order.append(person)
+            for child in self.children[person]:
+                dfs(child)
+        
+        dfs(self.king)
+        return order
+    
+    def get_next_king(self):
+        def find_next(person):
+            if person not in self.dead:
+                return person
+            for child in self.children[person]:
+                next_king = find_next(child)
+                if next_king:
+                    return next_king
+            return None
+        
+        # Check king's children
+        for child in self.children[self.king]:
+            next_king = find_next(child)
+            if next_king:
+                return next_king
+        
+        return None
+```
+
+**Complexity Analysis:**
+- Time: O(N) for inheritance order
+- Space: O(N)
 
 ## 9. Common Algorithms
 
@@ -838,12 +3576,65 @@ def fib_memo(n):
 - Edit Distance
 - Longest Common Subsequence
 - Knapsack Problem
+- Fibonacci Number
+- Minimum Path Sum
+- Unique Paths
+- Unique Paths II
+- Triangle
+- Maximum Subarray
+- Jump Game
+- Jump Game II
+- Palindromic Substrings
+- Longest Palindromic Substring
+- Word Break
+- Decode Ways
+- Partition Equal Subset Sum
 
 </details>
 
-### Common DP Patterns
+### 10.1 Climbing Stairs
+
+**Problem Statement:** You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?
+
+**Intuition:** This is a classic DP problem where each step depends on the previous steps. The number of ways to reach step n is the sum of ways to reach step n-1 and n-2.
+
+**Algorithm:**
+1. If n <= 2, return n
+2. Initialize dp array of size n+1
+3. Set dp[1] = 1, dp[2] = 2
+4. For i from 3 to n: dp[i] = dp[i-1] + dp[i-2]
+5. Return dp[n]
+
+**C++ Code:**
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+class Solution {
+public:
+    int climbStairs(int n) {
+        if (n <= 2) return n;
+        vector<int> dp(n + 1, 0);
+        dp[1] = 1;
+        dp[2] = 2;
+        for (int i = 3; i <= n; ++i) {
+            dp[i] = dp[i-1] + dp[i-2];
+        }
+        return dp[n];
+    }
+};
+
+int main() {
+    int n;
+    cin >> n;
+    Solution sol;
+    cout << sol.climbStairs(n) << endl;
+    return 0;
+}
+```
+
+**Python Code:**
 ```python
-# 1D DP - Climbing Stairs
 def climb_stairs(n):
     if n <= 2:
         return n
@@ -854,43 +3645,1168 @@ def climb_stairs(n):
         dp[i] = dp[i-1] + dp[i-2]
     return dp[n]
 
-# Space optimized
-def climb_stairs_optimized(n):
-    if n <= 2:
-        return n
-    a, b = 1, 2
-    for _ in range(3, n + 1):
-        a, b = b, a + b
-    return b
+if __name__ == "__main__":
+    n = int(input().strip())
+    print(climb_stairs(n))
+```
 
-# 2D DP - Knapsack
-def knapsack(weights, values, capacity):
-    n = len(weights)
-    dp = [[0] * (capacity + 1) for _ in range(n + 1)]
+**Complexity Analysis:**
+- Time: O(n)
+- Space: O(n)
+
+### 10.2 House Robber
+
+**Problem Statement:** You are a professional robber planning to rob houses along a street. Each house has a certain amount of money stashed, the only constraint stopping you from robbing each of them is that adjacent houses have security systems connected and it will automatically contact the police if two adjacent houses were broken into on the same night.
+
+**Intuition:** For each house, we have two choices: rob it or skip it. If we rob it, we cannot rob the previous house. Use DP to track maximum amount at each house.
+
+**Algorithm:**
+1. If no houses, return 0
+2. If one house, return its value
+3. Initialize dp array where dp[i] represents max money up to house i
+4. dp[0] = nums[0], dp[1] = max(nums[0], nums[1])
+5. For i from 2 to n-1: dp[i] = max(dp[i-1], dp[i-2] + nums[i])
+6. Return dp[n-1]
+
+**C++ Code:**
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+class Solution {
+public:
+    int rob(vector<int>& nums) {
+        int n = nums.size();
+        if (n == 0) return 0;
+        if (n == 1) return nums[0];
+        
+        vector<int> dp(n);
+        dp[0] = nums[0];
+        dp[1] = max(nums[0], nums[1]);
+        
+        for (int i = 2; i < n; ++i) {
+            dp[i] = max(dp[i-1], dp[i-2] + nums[i]);
+        }
+        
+        return dp[n-1];
+    }
+};
+
+int main() {
+    int n;
+    cin >> n;
+    vector<int> nums(n);
+    for (int i = 0; i < n; ++i) {
+        cin >> nums[i];
+    }
+    Solution sol;
+    cout << sol.rob(nums) << endl;
+    return 0;
+}
+```
+
+**Python Code:**
+```python
+def rob(nums):
+    n = len(nums)
+    if n == 0:
+        return 0
+    if n == 1:
+        return nums[0]
     
-    for i in range(1, n + 1):
-        for w in range(1, capacity + 1):
-            if weights[i-1] <= w:
-                dp[i][w] = max(dp[i-1][w], dp[i-1][w - weights[i-1]] + values[i-1])
+    dp = [0] * n
+    dp[0] = nums[0]
+    dp[1] = max(nums[0], nums[1])
+    
+    for i in range(2, n):
+        dp[i] = max(dp[i-1], dp[i-2] + nums[i])
+    
+    return dp[n-1]
+
+if __name__ == "__main__":
+    nums = list(map(int, input().strip().split()))
+    print(rob(nums))
+```
+
+**Complexity Analysis:**
+- Time: O(n)
+- Space: O(n)
+
+### 10.3 Longest Increasing Subsequence
+
+**Problem Statement:** Given an integer array nums, return the length of the longest strictly increasing subsequence.
+
+**Intuition:** For each element, find the longest increasing subsequence ending at that element. Use DP where dp[i] represents the LIS ending at index i.
+
+**Algorithm:**
+1. Initialize dp array with all 1s (each element is a subsequence of length 1)
+2. For each i from 1 to n-1:
+   - For each j from 0 to i-1:
+     - If nums[i] > nums[j], dp[i] = max(dp[i], dp[j] + 1)
+3. Return maximum value in dp array
+
+**C++ Code:**
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+class Solution {
+public:
+    int lengthOfLIS(vector<int>& nums) {
+        int n = nums.size();
+        vector<int> dp(n, 1);
+        
+        for (int i = 1; i < n; ++i) {
+            for (int j = 0; j < i; ++j) {
+                if (nums[i] > nums[j]) {
+                    dp[i] = max(dp[i], dp[j] + 1);
+                }
+            }
+        }
+        
+        return *max_element(dp.begin(), dp.end());
+    }
+};
+
+int main() {
+    int n;
+    cin >> n;
+    vector<int> nums(n);
+    for (int i = 0; i < n; ++i) {
+        cin >> nums[i];
+    }
+    Solution sol;
+    cout << sol.lengthOfLIS(nums) << endl;
+    return 0;
+}
+```
+
+**Python Code:**
+```python
+def length_of_lis(nums):
+    n = len(nums)
+    if n == 0:
+        return 0
+    
+    dp = [1] * n
+    
+    for i in range(1, n):
+        for j in range(i):
+            if nums[i] > nums[j]:
+                dp[i] = max(dp[i], dp[j] + 1)
+    
+    return max(dp)
+
+if __name__ == "__main__":
+    nums = list(map(int, input().strip().split()))
+    print(length_of_lis(nums))
+```
+
+**Complexity Analysis:**
+- Time: O(n²)
+- Space: O(n)
+
+### 10.4 Coin Change
+
+**Problem Statement:** You are given an integer array coins representing coins of different denominations and an integer amount representing a total amount of money. Return the fewest number of coins that you need to make up that amount. If that amount of money cannot be made up by any combination of the coins, return -1.
+
+**Intuition:** Use DP where dp[i] represents the minimum number of coins needed to make amount i. For each coin, update dp[i] if using that coin reduces the coin count.
+
+**Algorithm:**
+1. Initialize dp array of size amount+1 with INF, dp[0] = 0
+2. For each coin in coins:
+   - For i from coin to amount:
+     - If dp[i - coin] != INF, dp[i] = min(dp[i], dp[i - coin] + 1)
+3. Return dp[amount] if not INF, else -1
+
+**C++ Code:**
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+class Solution {
+public:
+    int coinChange(vector<int>& coins, int amount) {
+        const int INF = 1e9;
+        vector<int> dp(amount + 1, INF);
+        dp[0] = 0;
+        
+        for (int coin : coins) {
+            for (int i = coin; i <= amount; ++i) {
+                if (dp[i - coin] != INF) {
+                    dp[i] = min(dp[i], dp[i - coin] + 1);
+                }
+            }
+        }
+        
+        return dp[amount] == INF ? -1 : dp[amount];
+    }
+};
+
+int main() {
+    int n, amount;
+    cin >> n >> amount;
+    vector<int> coins(n);
+    for (int i = 0; i < n; ++i) {
+        cin >> coins[i];
+    }
+    Solution sol;
+    cout << sol.coinChange(coins, amount) << endl;
+    return 0;
+}
+```
+
+**Python Code:**
+```python
+def coin_change(coins, amount):
+    INF = float('inf')
+    dp = [INF] * (amount + 1)
+    dp[0] = 0
+    
+    for coin in coins:
+        for i in range(coin, amount + 1):
+            if dp[i - coin] != INF:
+                dp[i] = min(dp[i], dp[i - coin] + 1)
+    
+    return dp[amount] if dp[amount] != INF else -1
+
+if __name__ == "__main__":
+    import sys
+    input = sys.stdin.read
+    data = input().split()
+    n = int(data[0])
+    amount = int(data[1])
+    coins = list(map(int, data[2:2+n]))
+    print(coin_change(coins, amount))
+```
+
+**Complexity Analysis:**
+- Time: O(amount * len(coins))
+- Space: O(amount)
+
+### 10.5 Edit Distance
+
+**Problem Statement:** Given two strings word1 and word2, return the minimum number of operations required to convert word1 to word2. Operations allowed: insert, delete, replace.
+
+**Intuition:** Use 2D DP where dp[i][j] represents minimum operations to convert first i chars of word1 to first j chars of word2.
+
+**Algorithm:**
+1. Initialize dp[m+1][n+1], m = len(word1), n = len(word2)
+2. For i from 0 to m: dp[i][0] = i (deletions)
+3. For j from 0 to n: dp[0][j] = j (insertions)
+4. For i from 1 to m:
+   - For j from 1 to n:
+     - If word1[i-1] == word2[j-1], dp[i][j] = dp[i-1][j-1]
+     - Else, dp[i][j] = 1 + min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1])
+5. Return dp[m][n]
+
+**C++ Code:**
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+class Solution {
+public:
+    int minDistance(string word1, string word2) {
+        int m = word1.size(), n = word2.size();
+        vector<vector<int>> dp(m + 1, vector<int>(n + 1, 0));
+        
+        for (int i = 0; i <= m; ++i) dp[i][0] = i;
+        for (int j = 0; j <= n; ++j) dp[0][j] = j;
+        
+        for (int i = 1; i <= m; ++i) {
+            for (int j = 1; j <= n; ++j) {
+                if (word1[i-1] == word2[j-1]) {
+                    dp[i][j] = dp[i-1][j-1];
+                } else {
+                    dp[i][j] = 1 + min({dp[i-1][j], dp[i][j-1], dp[i-1][j-1]});
+                }
+            }
+        }
+        
+        return dp[m][n];
+    }
+};
+
+int main() {
+    string word1, word2;
+    cin >> word1 >> word2;
+    Solution sol;
+    cout << sol.minDistance(word1, word2) << endl;
+    return 0;
+}
+```
+
+**Python Code:**
+```python
+def min_distance(word1, word2):
+    m, n = len(word1), len(word2)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    
+    for i in range(m + 1):
+        dp[i][0] = i
+    for j in range(n + 1):
+        dp[0][j] = j
+    
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if word1[i-1] == word2[j-1]:
+                dp[i][j] = dp[i-1][j-1]
             else:
-                dp[i][w] = dp[i-1][w]
+                dp[i][j] = 1 + min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1])
     
-    return dp[n][capacity]
+    return dp[m][n]
 
-# Longest Common Subsequence
-def lcs(s1, s2):
-    m, n = len(s1), len(s2)
+if __name__ == "__main__":
+    word1, word2 = input().strip().split()
+    print(min_distance(word1, word2))
+```
+
+**Complexity Analysis:**
+- Time: O(m*n)
+- Space: O(m*n)
+
+### 10.6 Longest Common Subsequence
+
+**Problem Statement:** Given two strings text1 and text2, return the length of their longest common subsequence. A subsequence of a string is a new string generated from the original string with some characters (can be none) deleted without changing the relative order of the remaining characters.
+
+**Intuition:** Use 2D DP where dp[i][j] represents LCS length of first i chars of text1 and first j chars of text2.
+
+**Algorithm:**
+1. Initialize dp[m+1][n+1] with 0s
+2. For i from 1 to m:
+   - For j from 1 to n:
+     - If text1[i-1] == text2[j-1], dp[i][j] = dp[i-1][j-1] + 1
+     - Else, dp[i][j] = max(dp[i-1][j], dp[i][j-1])
+3. Return dp[m][n]
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int longestCommonSubsequence(string text1, string text2) {
+        int m = text1.size(), n = text2.size();
+        vector<vector<int>> dp(m + 1, vector<int>(n + 1, 0));
+        
+        for (int i = 1; i <= m; ++i) {
+            for (int j = 1; j <= n; ++j) {
+                if (text1[i-1] == text2[j-1]) {
+                    dp[i][j] = dp[i-1][j-1] + 1;
+                } else {
+                    dp[i][j] = max(dp[i-1][j], dp[i][j-1]);
+                }
+            }
+        }
+        
+        return dp[m][n];
+    }
+};
+
+int main() {
+    string text1, text2;
+    cin >> text1 >> text2;
+    Solution sol;
+    cout << sol.longestCommonSubsequence(text1, text2) << endl;
+    return 0;
+}
+```
+
+**Python Code:**
+```python
+def longest_common_subsequence(text1, text2):
+    m, n = len(text1), len(text2)
     dp = [[0] * (n + 1) for _ in range(m + 1)]
     
     for i in range(1, m + 1):
         for j in range(1, n + 1):
-            if s1[i-1] == s2[j-1]:
+            if text1[i-1] == text2[j-1]:
                 dp[i][j] = dp[i-1][j-1] + 1
             else:
                 dp[i][j] = max(dp[i-1][j], dp[i][j-1])
     
     return dp[m][n]
+
+if __name__ == "__main__":
+    text1, text2 = input().strip().split()
+    print(longest_common_subsequence(text1, text2))
 ```
+
+**Complexity Analysis:**
+- Time: O(m*n)
+- Space: O(m*n)
+
+### 10.7 Knapsack Problem
+
+**Problem Statement:** Given weights and values of n items, put these items in a knapsack of capacity W to get the maximum total value in the knapsack.
+
+**Intuition:** Use 2D DP where dp[i][w] represents maximum value using first i items with capacity w.
+
+**Algorithm:**
+1. Initialize dp[n+1][W+1] with 0s
+2. For i from 1 to n:
+   - For w from 1 to W:
+     - If weights[i-1] <= w, dp[i][w] = max(dp[i-1][w], dp[i-1][w - weights[i-1]] + values[i-1])
+     - Else, dp[i][w] = dp[i-1][w]
+3. Return dp[n][W]
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int knapsack(vector<int>& weights, vector<int>& values, int W) {
+        int n = weights.size();
+        vector<vector<int>> dp(n + 1, vector<int>(W + 1, 0));
+        
+        for (int i = 1; i <= n; ++i) {
+            for (int w = 1; w <= W; ++w) {
+                if (weights[i-1] <= w) {
+                    dp[i][w] = max(dp[i-1][w], dp[i-1][w - weights[i-1]] + values[i-1]);
+                } else {
+                    dp[i][w] = dp[i-1][w];
+                }
+            }
+        }
+        
+        return dp[n][W];
+    }
+};
+
+int main() {
+    int n, W;
+    cin >> n >> W;
+    vector<int> weights(n), values(n);
+    for (int i = 0; i < n; ++i) {
+        cin >> weights[i] >> values[i];
+    }
+    Solution sol;
+    cout << sol.knapsack(weights, values, W) << endl;
+    return 0;
+}
+```
+
+**Python Code:**
+```python
+def knapsack(weights, values, W):
+    n = len(weights)
+    dp = [[0] * (W + 1) for _ in range(n + 1)]
+    
+    for i in range(1, n + 1):
+        for w in range(1, W + 1):
+            if weights[i-1] <= w:
+                dp[i][w] = max(dp[i-1][w], dp[i-1][w - weights[i-1]] + values[i-1])
+            else:
+                dp[i][w] = dp[i-1][w]
+    
+    return dp[n][W]
+
+if __name__ == "__main__":
+    n, W = map(int, input().split())
+    weights = []
+    values = []
+    for _ in range(n):
+        w, v = map(int, input().split())
+        weights.append(w)
+        values.append(v)
+    print(knapsack(weights, values, W))
+```
+
+**Complexity Analysis:**
+- Time: O(n*W)
+- Space: O(n*W)
+
+### 10.8 Fibonacci Number
+
+**Problem Statement:** The Fibonacci numbers, commonly denoted F(n) form a sequence, called the Fibonacci sequence, such that each number is the sum of the two preceding ones, starting from 0 and 1.
+
+**Intuition:** Simple DP where each number depends on the previous two. Can be optimized to O(1) space.
+
+**Algorithm:**
+1. If n <= 1, return n
+2. Initialize a = 0, b = 1
+3. For i from 2 to n: a, b = b, a + b
+4. Return b
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int fib(int n) {
+        if (n <= 1) return n;
+        int a = 0, b = 1;
+        for (int i = 2; i <= n; ++i) {
+            int temp = a + b;
+            a = b;
+            b = temp;
+        }
+        return b;
+    }
+};
+```
+
+**Python Code:**
+```python
+def fib(n):
+    if n <= 1:
+        return n
+    a, b = 0, 1
+    for _ in range(2, n + 1):
+        a, b = b, a + b
+    return b
+```
+
+**Complexity Analysis:**
+- Time: O(n)
+- Space: O(1)
+
+### 10.9 Minimum Path Sum
+
+**Problem Statement:** Given a m x n grid filled with non-negative numbers, find a path from top left to bottom right, which minimizes the sum of all numbers along its path. You can only move either down or right at any point in time.
+
+**Intuition:** DP where dp[i][j] represents minimum path sum to reach grid[i][j].
+
+**Algorithm:**
+1. Initialize dp[m][n], dp[0][0] = grid[0][0]
+2. Fill first row: dp[0][j] = dp[0][j-1] + grid[0][j]
+3. Fill first column: dp[i][0] = dp[i-1][0] + grid[i][0]
+4. For i from 1 to m-1:
+   - For j from 1 to n-1:
+     - dp[i][j] = grid[i][j] + min(dp[i-1][j], dp[i][j-1])
+5. Return dp[m-1][n-1]
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int minPathSum(vector<vector<int>>& grid) {
+        int m = grid.size(), n = grid[0].size();
+        vector<vector<int>> dp(m, vector<int>(n, 0));
+        dp[0][0] = grid[0][0];
+        
+        for (int j = 1; j < n; ++j) dp[0][j] = dp[0][j-1] + grid[0][j];
+        for (int i = 1; i < m; ++i) dp[i][0] = dp[i-1][0] + grid[i][0];
+        
+        for (int i = 1; i < m; ++i) {
+            for (int j = 1; j < n; ++j) {
+                dp[i][j] = grid[i][j] + min(dp[i-1][j], dp[i][j-1]);
+            }
+        }
+        
+        return dp[m-1][n-1];
+    }
+};
+```
+
+**Python Code:**
+```python
+def min_path_sum(grid):
+    m, n = len(grid), len(grid[0])
+    dp = [[0] * n for _ in range(m)]
+    dp[0][0] = grid[0][0]
+    
+    for j in range(1, n):
+        dp[0][j] = dp[0][j-1] + grid[0][j]
+    for i in range(1, m):
+        dp[i][0] = dp[i-1][0] + grid[i][0]
+    
+    for i in range(1, m):
+        for j in range(1, n):
+            dp[i][j] = grid[i][j] + min(dp[i-1][j], dp[i][j-1])
+    
+    return dp[m-1][n-1]
+```
+
+**Complexity Analysis:**
+- Time: O(m*n)
+- Space: O(m*n)
+
+### 10.10 Unique Paths
+
+**Problem Statement:** A robot is located at the top-left corner of a m x n grid. The robot can only move either down or right at any point in time. The robot is trying to reach the bottom-right corner of the grid. How many possible unique paths are there?
+
+**Intuition:** Combinatorics problem. Total moves: m-1 down + n-1 right. Choose positions for down moves: C((m-1)+(n-1), m-1)
+
+**Algorithm:**
+1. Return C(m+n-2, m-1) where C(n,k) = n! / (k! * (n-k)!)
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int uniquePaths(int m, int n) {
+        long long res = 1;
+        int N = m + n - 2;
+        int K = min(m-1, n-1);
+        
+        for (int i = 1; i <= K; ++i) {
+            res *= (N - K + i);
+            res /= i;
+        }
+        
+        return res;
+    }
+};
+```
+
+**Python Code:**
+```python
+def unique_paths(m, n):
+    import math
+    return math.comb(m + n - 2, m - 1)
+```
+
+**Complexity Analysis:**
+- Time: O(min(m,n))
+- Space: O(1)
+
+### 10.11 Unique Paths II
+
+**Problem Statement:** A robot is located at the top-left corner of a m x n grid with obstacles. The robot can only move either down or right at any point in time. The robot is trying to reach the bottom-right corner of the grid. Now consider if some obstacles are added to the grids. How many unique paths would there be?
+
+**Intuition:** DP with obstacle handling. If obstacle at position, set dp[i][j] = 0.
+
+**Algorithm:**
+1. If grid[0][0] == 1 or grid[m-1][n-1] == 1, return 0
+2. Initialize dp[m][n], dp[0][0] = 1
+3. Fill first row and column, stopping at obstacles
+4. For other cells: if no obstacle, dp[i][j] = dp[i-1][j] + dp[i][j-1]
+5. Return dp[m-1][n-1]
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int uniquePathsWithObstacles(vector<vector<int>>& obstacleGrid) {
+        int m = obstacleGrid.size(), n = obstacleGrid[0].size();
+        if (obstacleGrid[0][0] == 1 || obstacleGrid[m-1][n-1] == 1) return 0;
+        
+        vector<vector<int>> dp(m, vector<int>(n, 0));
+        dp[0][0] = 1;
+        
+        for (int j = 1; j < n; ++j) {
+            if (obstacleGrid[0][j] == 0) dp[0][j] = dp[0][j-1];
+        }
+        for (int i = 1; i < m; ++i) {
+            if (obstacleGrid[i][0] == 0) dp[i][0] = dp[i-1][0];
+        }
+        
+        for (int i = 1; i < m; ++i) {
+            for (int j = 1; j < n; ++j) {
+                if (obstacleGrid[i][j] == 0) {
+                    dp[i][j] = dp[i-1][j] + dp[i][j-1];
+                }
+            }
+        }
+        
+        return dp[m-1][n-1];
+    }
+};
+```
+
+**Python Code:**
+```python
+def unique_paths_with_obstacles(obstacle_grid):
+    m, n = len(obstacle_grid), len(obstacle_grid[0])
+    if obstacle_grid[0][0] == 1 or obstacle_grid[m-1][n-1] == 1:
+        return 0
+    
+    dp = [[0] * n for _ in range(m)]
+    dp[0][0] = 1
+    
+    for j in range(1, n):
+        if obstacle_grid[0][j] == 0:
+            dp[0][j] = dp[0][j-1]
+    for i in range(1, m):
+        if obstacle_grid[i][0] == 0:
+            dp[i][0] = dp[i-1][0]
+    
+    for i in range(1, m):
+        for j in range(1, n):
+            if obstacle_grid[i][j] == 0:
+                dp[i][j] = dp[i-1][j] + dp[i][j-1]
+    
+    return dp[m-1][n-1]
+```
+
+**Complexity Analysis:**
+- Time: O(m*n)
+- Space: O(m*n)
+
+### 10.12 Triangle
+
+**Problem Statement:** Given a triangle array, return the minimum path sum from top to bottom. For each step, you may move to an adjacent number of the row below.
+
+**Intuition:** DP from bottom to top. Start from second last row and work upwards, updating each position with minimum of two possible paths below.
+
+**Algorithm:**
+1. Start from row len(triangle)-2 down to 0:
+   - For each position j in row: triangle[i][j] += min(triangle[i+1][j], triangle[i+1][j+1])
+2. Return triangle[0][0]
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int minimumTotal(vector<vector<int>>& triangle) {
+        int n = triangle.size();
+        for (int i = n - 2; i >= 0; --i) {
+            for (int j = 0; j <= i; ++j) {
+                triangle[i][j] += min(triangle[i+1][j], triangle[i+1][j+1]);
+            }
+        }
+        return triangle[0][0];
+    }
+};
+```
+
+**Python Code:**
+```python
+def minimum_total(triangle):
+    n = len(triangle)
+    for i in range(n - 2, -1, -1):
+        for j in range(i + 1):
+            triangle[i][j] += min(triangle[i+1][j], triangle[i+1][j+1])
+    return triangle[0][0]
+```
+
+**Complexity Analysis:**
+- Time: O(n²)
+- Space: O(1) extra space (modifies input)
+
+### 10.13 Maximum Subarray
+
+**Problem Statement:** Given an integer array nums, find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.
+
+**Intuition:** Kadane's algorithm. Keep track of current sum and maximum sum. Reset current sum when it becomes negative.
+
+**Algorithm:**
+1. Initialize max_sum = nums[0], current_sum = nums[0]
+2. For i from 1 to n-1:
+   - current_sum = max(nums[i], current_sum + nums[i])
+   - max_sum = max(max_sum, current_sum)
+3. Return max_sum
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int maxSubArray(vector<int>& nums) {
+        int max_sum = nums[0], current_sum = nums[0];
+        for (size_t i = 1; i < nums.size(); ++i) {
+            current_sum = max(nums[i], current_sum + nums[i]);
+            max_sum = max(max_sum, current_sum);
+        }
+        return max_sum;
+    }
+};
+```
+
+**Python Code:**
+```python
+def max_subarray(nums):
+    max_sum = current_sum = nums[0]
+    for num in nums[1:]:
+        current_sum = max(num, current_sum + num)
+        max_sum = max(max_sum, current_sum)
+    return max_sum
+```
+
+**Complexity Analysis:**
+- Time: O(n)
+- Space: O(1)
+
+### 10.14 Jump Game
+
+**Problem Statement:** You are given an integer array nums. You are initially positioned at the first index, and each element in the array represents your maximum jump length at that position. Return true if you can reach the last index, or false otherwise.
+
+**Intuition:** Keep track of the farthest position we can reach. If at any point current position > farthest, we can't proceed.
+
+**Algorithm:**
+1. Initialize farthest = 0
+2. For i from 0 to n-1:
+   - If i > farthest, return false
+   - farthest = max(farthest, i + nums[i])
+   - If farthest >= n-1, return true
+3. Return true
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    bool canJump(vector<int>& nums) {
+        int n = nums.size(), farthest = 0;
+        for (int i = 0; i < n; ++i) {
+            if (i > farthest) return false;
+            farthest = max(farthest, i + nums[i]);
+            if (farthest >= n - 1) return true;
+        }
+        return true;
+    }
+};
+```
+
+**Python Code:**
+```python
+def can_jump(nums):
+    n = len(nums)
+    farthest = 0
+    for i in range(n):
+        if i > farthest:
+            return False
+        farthest = max(farthest, i + nums[i])
+        if farthest >= n - 1:
+            return True
+    return True
+```
+
+**Complexity Analysis:**
+- Time: O(n)
+- Space: O(1)
+
+### 10.15 Jump Game II
+
+**Problem Statement:** Given an array of non-negative integers nums, you are initially positioned at the first index of the array. Each element in the array represents your maximum jump length at that position. Your goal is to reach the last index in the minimum number of jumps.
+
+**Intuition:** Use greedy approach. Keep track of current end of range and farthest we can reach. When we reach current end, increment jump count.
+
+**Algorithm:**
+1. Initialize jumps = 0, current_end = 0, farthest = 0
+2. For i from 0 to n-2:
+   - farthest = max(farthest, i + nums[i])
+   - If i == current_end:
+     - jumps += 1
+     - current_end = farthest
+3. Return jumps
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int jump(vector<int>& nums) {
+        int n = nums.size(), jumps = 0, current_end = 0, farthest = 0;
+        for (int i = 0; i < n - 1; ++i) {
+            farthest = max(farthest, i + nums[i]);
+            if (i == current_end) {
+                jumps++;
+                current_end = farthest;
+            }
+        }
+        return jumps;
+    }
+};
+```
+
+**Python Code:**
+```python
+def jump(nums):
+    n = len(nums)
+    jumps = current_end = farthest = 0
+    for i in range(n - 1):
+        farthest = max(farthest, i + nums[i])
+        if i == current_end:
+            jumps += 1
+            current_end = farthest
+    return jumps
+```
+
+**Complexity Analysis:**
+- Time: O(n)
+- Space: O(1)
+
+### 10.16 Palindromic Substrings
+
+**Problem Statement:** Given a string s, return the number of palindromic substrings in it. A string is a palindrome when it reads the same backward as forward. A substring is a contiguous sequence of characters within the string.
+
+**Intuition:** Expand around centers. For each possible center (single char or between chars), expand while characters match.
+
+**Algorithm:**
+1. Initialize count = 0
+2. For each center i from 0 to 2*n-1:
+   - left = i // 2, right = left + i % 2
+   - While left >= 0 and right < n and s[left] == s[right]:
+     - count += 1
+     - left -= 1, right += 1
+3. Return count
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int countSubstrings(string s) {
+        int n = s.size(), count = 0;
+        for (int center = 0; center < 2 * n - 1; ++center) {
+            int left = center / 2;
+            int right = left + center % 2;
+            while (left >= 0 && right < n && s[left] == s[right]) {
+                count++;
+                left--;
+                right++;
+            }
+        }
+        return count;
+    }
+};
+```
+
+**Python Code:**
+```python
+def count_substrings(s):
+    n = len(s)
+    count = 0
+    for center in range(2 * n - 1):
+        left = center // 2
+        right = left + center % 2
+        while left >= 0 and right < n and s[left] == s[right]:
+            count += 1
+            left -= 1
+            right += 1
+    return count
+```
+
+**Complexity Analysis:**
+- Time: O(n²)
+- Space: O(1)
+
+### 10.17 Longest Palindromic Substring
+
+**Problem Statement:** Given a string s, return the longest palindromic substring in s.
+
+**Intuition:** Expand around centers. Track the longest palindrome found during expansion.
+
+**Algorithm:**
+1. Initialize start = 0, max_len = 1
+2. For each center i from 0 to 2*n-1:
+   - left = i // 2, right = left + i % 2
+   - While left >= 0 and right < n and s[left] == s[right]:
+     - If right - left + 1 > max_len:
+       - start = left, max_len = right - left + 1
+     - left -= 1, right += 1
+3. Return s[start:start+max_len]
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    string longestPalindrome(string s) {
+        int n = s.size(), start = 0, max_len = 1;
+        for (int center = 0; center < 2 * n - 1; ++center) {
+            int left = center / 2;
+            int right = left + center % 2;
+            while (left >= 0 && right < n && s[left] == s[right]) {
+                if (right - left + 1 > max_len) {
+                    start = left;
+                    max_len = right - left + 1;
+                }
+                left--;
+                right++;
+            }
+        }
+        return s.substr(start, max_len);
+    }
+};
+```
+
+**Python Code:**
+```python
+def longest_palindrome(s):
+    n = len(s)
+    start = max_len = 0
+    for center in range(2 * n - 1):
+        left = center // 2
+        right = left + center % 2
+        while left >= 0 and right < n and s[left] == s[right]:
+            if right - left + 1 > max_len:
+                start = left
+                max_len = right - left + 1
+            left -= 1
+            right += 1
+    return s[start:start + max_len]
+```
+
+**Complexity Analysis:**
+- Time: O(n²)
+- Space: O(1)
+
+### 10.18 Word Break
+
+**Problem Statement:** Given a string s and a dictionary of strings wordDict, return true if s can be segmented into a space-separated sequence of one or more dictionary words.
+
+**Intuition:** DP where dp[i] represents whether s[0..i-1] can be segmented. For each position, check if any word ending at that position can be formed.
+
+**Algorithm:**
+1. Initialize dp[n+1] with false, dp[0] = true
+2. For i from 1 to n:
+   - For j from 0 to i-1:
+     - If dp[j] and s[j..i-1] in wordDict, dp[i] = true
+3. Return dp[n]
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    bool wordBreak(string s, vector<string>& wordDict) {
+        unordered_set<string> wordSet(wordDict.begin(), wordDict.end());
+        int n = s.size();
+        vector<bool> dp(n + 1, false);
+        dp[0] = true;
+        
+        for (int i = 1; i <= n; ++i) {
+            for (int j = 0; j < i; ++j) {
+                if (dp[j] && wordSet.count(s.substr(j, i - j))) {
+                    dp[i] = true;
+                    break;
+                }
+            }
+        }
+        
+        return dp[n];
+    }
+};
+```
+
+**Python Code:**
+```python
+def word_break(s, word_dict):
+    word_set = set(word_dict)
+    n = len(s)
+    dp = [False] * (n + 1)
+    dp[0] = True
+    
+    for i in range(1, n + 1):
+        for j in range(i):
+            if dp[j] and s[j:i] in word_set:
+                dp[i] = True
+                break
+    
+    return dp[n]
+```
+
+**Complexity Analysis:**
+- Time: O(n²)
+- Space: O(n)
+
+### 10.19 Decode Ways
+
+**Problem Statement:** A message containing letters from A-Z can be encoded into numbers using the mapping A=1, B=2, ..., Z=26. Given a string s containing only digits, return the number of ways to decode it.
+
+**Intuition:** DP where dp[i] represents number of ways to decode first i characters. Check single and double digit possibilities.
+
+**Algorithm:**
+1. If s[0] == '0', return 0
+2. Initialize dp[n+1], dp[0] = 1, dp[1] = 1
+3. For i from 2 to n:
+   - If s[i-1] != '0', dp[i] += dp[i-1]
+   - If s[i-2] in ['1','2'] and int(s[i-2:i]) <= 26, dp[i] += dp[i-2]
+4. Return dp[n]
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    int numDecodings(string s) {
+        int n = s.size();
+        if (s[0] == '0') return 0;
+        
+        vector<int> dp(n + 1, 0);
+        dp[0] = 1;
+        dp[1] = 1;
+        
+        for (int i = 2; i <= n; ++i) {
+            if (s[i-1] != '0') dp[i] += dp[i-1];
+            if ((s[i-2] == '1') || (s[i-2] == '2' && s[i-1] <= '6')) {
+                dp[i] += dp[i-2];
+            }
+        }
+        
+        return dp[n];
+    }
+};
+```
+
+**Python Code:**
+```python
+def num_decodings(s):
+    n = len(s)
+    if s[0] == '0':
+        return 0
+    
+    dp = [0] * (n + 1)
+    dp[0] = 1
+    dp[1] = 1
+    
+    for i in range(2, n + 1):
+        if s[i-1] != '0':
+            dp[i] += dp[i-1]
+        if s[i-2] == '1' or (s[i-2] == '2' and s[i-1] <= '6'):
+            dp[i] += dp[i-2]
+    
+    return dp[n]
+```
+
+**Complexity Analysis:**
+- Time: O(n)
+- Space: O(n)
+
+### 10.20 Partition Equal Subset Sum
+
+**Problem Statement:** Given a non-empty array nums containing only positive integers, find if the array can be partitioned into two subsets such that the sum of elements in both subsets is equal.
+
+**Intuition:** This is 0/1 knapsack where we check if we can achieve sum/2. If total sum is odd, impossible.
+
+**Algorithm:**
+1. Calculate total = sum(nums)
+2. If total % 2 != 0, return false
+3. target = total / 2
+4. Use DP: dp[w] = true if we can achieve sum w
+5. For each num in nums:
+   - For w from target down to num:
+     - dp[w] = dp[w] or dp[w - num]
+6. Return dp[target]
+
+**C++ Code:**
+```cpp
+class Solution {
+public:
+    bool canPartition(vector<int>& nums) {
+        int total = 0;
+        for (int num : nums) total += num;
+        if (total % 2 != 0) return false;
+        
+        int target = total / 2;
+        vector<bool> dp(target + 1, false);
+        dp[0] = true;
+        
+        for (int num : nums) {
+            for (int w = target; w >= num; --w) {
+                dp[w] = dp[w] || dp[w - num];
+            }
+        }
+        
+        return dp[target];
+    }
+};
+```
+
+**Python Code:**
+```python
+def can_partition(nums):
+    total = sum(nums)
+    if total % 2 != 0:
+        return False
+    
+    target = total // 2
+    dp = [False] * (target + 1)
+    dp[0] = True
+    
+    for num in nums:
+        for w in range(target, num - 1, -1):
+            dp[w] = dp[w] or dp[w - num]
+    
+    return dp[target]
+```
+
+**Complexity Analysis:**
+- Time: O(n*target)
+- Space: O(target)
 
 ---
 
