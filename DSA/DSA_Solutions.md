@@ -571,6 +571,8 @@ class BST:
 
 **Problem Statement:** Given an m x n 2D binary grid which represents a map of '1's (land) and '0's (water), return the number of islands. An island is surrounded by water and is formed by connecting adjacent lands horizontally or vertically.
 
+**Input Format:** First line contains two integers m n (rows and columns). Next m lines contain n space-separated integers each.
+
 **Intuition:** Use DFS or BFS to traverse each island, marking visited cells. Count each connected component of '1's.
 
 **Algorithm:**
@@ -761,6 +763,8 @@ def clone_graph(node):
 ### 8.3 Course Schedule
 
 **Problem Statement:** There are a total of numCourses courses you have to take, labeled from 0 to numCourses - 1. You are given an array prerequisites where prerequisites[i] = [ai, bi] indicates that you must take course bi first if you want to take course ai. Return true if you can finish all courses.
+
+**Input Format:** First line contains two integers numCourses p (number of courses and number of prerequisites). Next p lines contain two integers ai bi (prerequisites).
 
 **Intuition:** This is a cycle detection problem in directed graph. Use topological sort - if we can complete topological sort, no cycle exists.
 
@@ -1048,6 +1052,8 @@ def ladder_length(begin_word, end_word, word_list):
 ### 8.6 Network Delay Time
 
 **Problem Statement:** You are given a network of n nodes, labeled from 1 to n. You are also given times, a list of travel times as directed edges times[i] = (ui, vi, wi), where ui is the source node, vi is the target node, and wi is the time it takes for a signal to travel from source to target. We will send a signal from a given node k. Return the time it takes for all the n nodes to receive the signal. If it is impossible for all the n nodes to receive the signal, return -1.
+
+**Input Format:** First line contains three integers n k e (nodes, source, edges). Next e lines contain three integers ui vi wi (edges with weights).
 
 **Intuition:** Use Dijkstra's algorithm to find shortest path from source k to all nodes. The maximum distance is the answer.
 
@@ -3627,6 +3633,8 @@ def fib_memo(n):
 
 **Problem Statement:** You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?
 
+**Input Format:** A single integer n representing the number of steps.
+
 **Intuition:** This is a classic DP problem where each step depends on the previous steps. The number of ways to reach step n is the sum of ways to reach step n-1 and n-2.
 
 **Algorithm:**
@@ -3688,6 +3696,8 @@ if __name__ == "__main__":
 ### 10.2 House Robber
 
 **Problem Statement:** You are a professional robber planning to rob houses along a street. Each house has a certain amount of money stashed, the only constraint stopping you from robbing each of them is that adjacent houses have security systems connected and it will automatically contact the police if two adjacent houses were broken into on the same night.
+
+**Input Format:** First line contains an integer n (size of array). Second line contains n space-separated integers.
 
 **Intuition:** For each house, we have two choices: rob it or skip it. If we rob it, we cannot rob the previous house. Use DP to track maximum amount at each house.
 
@@ -3767,6 +3777,8 @@ if __name__ == "__main__":
 
 **Problem Statement:** Given an integer array nums, return the length of the longest strictly increasing subsequence.
 
+**Input Format:** First line contains an integer n (size of array). Second line contains n space-separated integers.
+
 **Intuition:** For each element, find the longest increasing subsequence ending at that element. Use DP where dp[i] represents the LIS ending at index i.
 
 **Algorithm:**
@@ -3840,6 +3852,8 @@ if __name__ == "__main__":
 ### 10.4 Coin Change
 
 **Problem Statement:** You are given an integer array coins representing coins of different denominations and an integer amount representing a total amount of money. Return the fewest number of coins that you need to make up that amount. If that amount of money cannot be made up by any combination of the coins, return -1.
+
+**Input Format:** First line contains two integers n amount (number of coin types and target amount). Second line contains n space-separated integers (coin denominations).
 
 **Intuition:** Use DP where dp[i] represents the minimum number of coins needed to make amount i. For each coin, update dp[i] if using that coin reduces the coin count.
 
@@ -3918,6 +3932,8 @@ if __name__ == "__main__":
 ### 10.5 Edit Distance
 
 **Problem Statement:** Given two strings word1 and word2, return the minimum number of operations required to convert word1 to word2. Operations allowed: insert, delete, replace.
+
+**Input Format:** Two strings separated by space.
 
 **Intuition:** Use 2D DP where dp[i][j] represents minimum operations to convert first i chars of word1 to first j chars of word2.
 
@@ -4001,6 +4017,8 @@ if __name__ == "__main__":
 
 **Problem Statement:** Given two strings text1 and text2, return the length of their longest common subsequence. A subsequence of a string is a new string generated from the original string with some characters (can be none) deleted without changing the relative order of the remaining characters.
 
+**Input Format:** Two strings separated by space.
+
 **Intuition:** Use 2D DP where dp[i][j] represents LCS length of first i chars of text1 and first j chars of text2.
 
 **Algorithm:**
@@ -4069,6 +4087,8 @@ if __name__ == "__main__":
 ### 10.7 Knapsack Problem
 
 **Problem Statement:** Given weights and values of n items, put these items in a knapsack of capacity W to get the maximum total value in the knapsack.
+
+**Input Format:** First line contains two integers n W (number of items and knapsack capacity). Next n lines contain two integers wi vi (weight and value of each item).
 
 **Intuition:** Use 2D DP where dp[i][w] represents maximum value using first i items with capacity w.
 
@@ -4844,6 +4864,8 @@ def can_partition(nums):
 ### 10.21 Frog Jump(DP-3)
 
 **Problem Statement:** A frog is crossing a river. The river is divided into units, and at each unit, there is a stone at a certain height given in array heights. The frog can jump from stone i to stone i+1 or i+2, and the cost of jumping from i to j is |heights[i] - heights[j]|. Find the minimum cost to reach the last stone from the first stone.
+
+**Input Format:** First line contains an integer n (number of stones). Second line contains n space-separated integers (heights of stones).
 
 **Intuition:** Use DP where dp[i] represents the minimum cost to reach stone i. For each stone, the cost is the minimum of coming from i-1 or i-2, plus the jump cost.
 
